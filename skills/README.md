@@ -10,7 +10,7 @@ reference files loaded only when their section is needed.
 - Skills are named by **capability**, not project or tool — all project specifics live in the profile
   and rules, so the set is portable to another project by swapping those.
 
-## The 12 skills
+## The 13 skills
 
 ### Core — write/refactor (auto-pulled while coding)
 | Skill | Capability |
@@ -29,6 +29,7 @@ reference files loaded only when their section is needed.
 | Skill | Capability |
 |-------|-----------|
 | [task-scoping](task-scoping/) | Scope a ticket onto the workspace (read-only) |
+| [solution-planning](solution-planning/) | Solution design + ordered plan + effort/time estimate (read-only) |
 | [change-implementation](change-implementation/) | Guarded, approval-gated implement flow |
 | [completion-audit](completion-audit/) | Ticket completeness — 1 ticket or a whole release (+ conflict detection); Workflow fan-out |
 | [bug-investigation](bug-investigation/) | Read-only root-cause diagnosis |

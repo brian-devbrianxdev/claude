@@ -1,0 +1,25 @@
+# --- Local / machine-specific (never commit) ---
+settings.local.json
+policy-limits.json
+remote-settings.json
+.last-cleanup
+
+# --- Runtime state (per-machine, not shareable) ---
+sessions/
+projects/
+history.jsonl
+cache/
+plugins/
+shell-snapshots/
+session-env/
+file-history/
+paste-cache/
+ide/
+
+# --- Local snapshots ---
+backups/
+
+# --- OS / editor junk ---
+.DS_Store
+*.tmp
+*.swp

@@ -1,0 +1,44 @@
+{
+  "theme": "dark",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/quapp-guard.sh\"",
+            "statusMessage": "Quapp workspace guard..."
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r --arg msg 'Editing a .java file — follow the Java gate in .claude/rules/java.md: (1) Phase 0 branch setup (branch type/khactuong.ngohoang/... from an updated base); (2) self-explanatory code, NO comments except public Javadoc; (3) tests are mandatory (regression test for bug fixes); (4) run the code-review + security-review gate before commit.' 'if (.tool_input.file_path // \"\" | endswith(\".java\")) then {hookSpecificOutput:{hookEventName:\"PreToolUse\",additionalContext:$msg}} else empty end' 2>/dev/null || true",
+            "statusMessage": "Checking Java coding standards..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/quapp-guard.sh\"",
+            "statusMessage": "Quapp workspace guard..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r --arg msg 'Just edited a .java file — before committing, run the post-change gate (see .claude/rules/java.md): (1) run the affected unit/integration tests and ensure they pass (regression test for bug fixes); (2) run code-review (null safety, exceptions, correctness); (3) run security-review if input handling / queries / auth changed; (4) then commit via the commit skill with the issue key in the footer.' 'if ((.tool_input.file_path // .tool_response.filePath // \"\") | endswith(\".java\")) then {hookSpecificOutput:{hookEventName:\"PostToolUse\",additionalContext:$msg}} else empty end' 2>/dev/null || true",
+            "statusMessage": "Java post-edit gate reminder..."
+          }
+        ]
+      }
+    ]
+  }
+}

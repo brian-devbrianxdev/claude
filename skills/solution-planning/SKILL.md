@@ -20,8 +20,14 @@ original form — translate the prose, not the symbols.
 - After `task-scoping`; if scope isn't done yet, run a light scope first (or invoke the skill).
 
 ## Workflow Steps
-1. **Restate goal + acceptance criteria.** Fetch the ticket (Atlassian MCP `getJiraIssue`) or use the
-   pasted text. List the atomic requirements — these are what you plan and estimate against.
+1. **Restate goal + acceptance criteria — and read the comment thread.** Fetch the ticket (Atlassian
+   MCP `getJiraIssue`, include `comment` in `fields` so `fields.comment.comments` comes back) or use the
+   pasted text. **Always read the existing comments** — other people (PO/BA/devs/QA) discuss, clarify,
+   correct, or change scope in the thread below the ticket, and those replies often override or refine
+   the original description (e.g. a resolved product question, a changed business rule, an agreed
+   approach). Reconcile the description with the thread; if they conflict, the latest comment usually
+   wins — call out the discrepancy and any **still-open question** as an Unknown that lowers confidence.
+   List the atomic requirements — these are what you plan and estimate against.
 2. **Get the scope.** Reuse [task-scoping](../task-scoping/SKILL.md) output (target repo(s), JDK,
    affected files/layers, cross-repo contract/DB impact) or derive it. Cite real `path:line`.
 3. **Design the solution.** Propose a **recommended approach** and, when the solution space is wide,
@@ -93,6 +99,9 @@ original form — translate the prose, not the symbols.
   Original Estimate line up (12h→3, 16h→4). SP on the parent Story only.
 
 ## Rules Claude Must Follow
+- **Read the ticket's comment thread, not just the description** (Step 1). Discussion below the ticket
+  often refines/overrides the original spec; reconcile both, let the latest comment win on conflicts, and
+  surface any still-open question as an Unknown.
 - **Read-only on source.** Don't modify code; cite evidence at `path:line`; mark anything unverifiable
   **Unknown / needs confirmation** — unknowns *lower confidence and widen the range*, never get hidden.
 - **Write the solution + plan in Vietnamese** (chat reply + ticket comment); keep identifiers/paths/

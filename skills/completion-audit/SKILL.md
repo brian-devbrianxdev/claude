@@ -42,6 +42,10 @@ ticket's footprint at once).
   spawning a workflow, but default to the workflow for ≥4 tickets or ≥2 repos touched.
 - Per-ticket completeness logic mirrors [single-ticket.md](single-ticket.md) exactly
   (criteria → evidence → ✅/🟡/❌/⚠️ → %). Reuse it; don't reinvent the scoring.
+- **Model routing** ([`../../rules/model-routing.md`](../../rules/model-routing.md)): per-ticket audit
+  workers = **sonnet** (evidence mapping); the cross-ticket conflict synthesis = **opus** (cross-module
+  contract reasoning); the orchestrator + final Go/No-Go verdict run at the **session model** (inherit —
+  no `model` override). The script below already sets these.
 
 ## Workflow
 
@@ -213,8 +217,25 @@ const footprints = (await parallel(tickets.map(t => () =>
     `4) Record the footprint: every file touched, every cross-repo contract (dto/endpoint/ws/sse/stomp) ` +
     `changed, every shared config/auth key touched (security/jwt/rate-limit/env/yaml/constants), and any ` +
     `Liquibase changeset. Read-only — do not edit anything.`,
-    { label: `audit:${t}`, phase: 'Audit', schema: FOOTPRINT, agentType: 'Explore' })
+    { label: `audit:${t}`, phase: 'Audit', schema: FOOTPRINT, agentType: 'Explore', model: 'sonnet' })
 ))).filter(Boolean)
+
+const STATUS_WEIGHT = { '✅': 1, '🟡': 0.5, '❌': 0 }
+const validation = footprints.map(fp => {
+  const scored = fp.criteria.filter(c => c.status in STATUS_WEIGHT)
+  const computed = scored.length
+    ? Math.round(scored.reduce((s, c) => s + STATUS_WEIGHT[c.status], 0) / scored.length * 100)
+    : 0
+  const problems = []
+  if (Math.abs(computed - fp.completionPct) > 1)
+    problems.push(`completionPct ${fp.completionPct} != computed ${computed}`)
+  const noEvidence = fp.criteria.filter(c => c.status === '✅' && !/:\d+/.test(c.evidence || ''))
+  if (noEvidence.length)
+    problems.push(`${noEvidence.length} ✅ criteria lack path:line evidence`)
+  return { ticket: fp.ticket, computed, problems }
+})
+validation.filter(v => v.problems.length)
+  .forEach(v => log(`⚠️ footprint ${v.ticket}: ${v.problems.join('; ')}`))
 
 phase('Conflicts')
 const conflicts = await agent(
@@ -232,12 +253,14 @@ const conflicts = await agent(
   `respecting the two-DB split.\n` +
   `Severity: 🔴 breaks build/runtime or corrupts behavior; 🟠 needs a deliberate merge; 🟢 path-only overlap. ` +
   `For each finding give both tickets, the exact location, and why. Read-only.`,
-  { label: 'conflict-synthesis', phase: 'Conflicts', schema: CONFLICTS, effort: 'high' })
+  { label: 'conflict-synthesis', phase: 'Conflicts', schema: CONFLICTS, effort: 'high', model: 'opus' })
 
-return { tickets, footprints, conflicts }
+return { tickets, footprints, conflicts, validation }
 ```
-After the workflow returns, build the Output Contract report from `footprints` + `conflicts`, compute the
-release completeness %, and state Go/No-Go. For each gap (🟡/❌/⚠️) and each 🔴/🟠 conflict, write a minimal
+After the workflow returns, first check `validation` — any footprint with problems (mis-computed %,
+✅ criteria without `path:line` evidence) is untrusted: use the `computed` % instead and flag the
+ticket ⚠️ in the report. Then build the Output Contract report from `footprints` + `conflicts`,
+compute the release completeness %, and state Go/No-Go. For each gap (🟡/❌/⚠️) and each 🔴/🟠 conflict, write a minimal
 plan item routed through [rules/java.md](../../rules/java.md) gate
 (branch from the confirmed base, tests mandatory, self-review before MR). Close the gap; don't gold-plate.
 

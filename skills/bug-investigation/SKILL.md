@@ -9,6 +9,10 @@ Diagnose **why** a bug happens and **where** in the code, starting from a Jira t
 **read-only** — it produces a root-cause analysis, not a fix. When the cause is confirmed, hand off to
 [/ship-task](../../commands/ship-task.md) to implement and ship the fix.
 
+> **Model routing:** opus-class ([`../../rules/model-routing.md`](../../rules/model-routing.md)) —
+> root-cause analysis is never routed below opus. If the session runs a cheaper model, suggest
+> `/model opus` before diving in (once, at the start).
+
 ## When to Use
 - User says "investigate JIRA-123" / "find the root cause of PROJ-456" / "why does this bug happen"
 - Before fixing — to understand the defect rather than patching the symptom

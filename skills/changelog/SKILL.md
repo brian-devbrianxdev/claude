@@ -7,6 +7,12 @@ description: Generate changelogs from git commits. Use when user says "generate 
 
 Generate changelogs from conventional commits for Java projects.
 
+> **Model routing** ([`../../rules/model-routing.md`](../../rules/model-routing.md)): haiku-class.
+> For a small range (≲30 commits) just run inline. For a large range, delegate the drafting to the
+> **`drafter`** agent (`../../agents/drafter.md`, pinned to haiku) —
+> `Agent(subagent_type: "drafter", prompt: "<git log output + the format below>")` — and relay its
+> output; don't burn an expensive model on mechanical summarization.
+
 ## When to Use
 - Before a release
 - User says "generate changelog" / "update changelog" / "what changed since last release"

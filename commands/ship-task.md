@@ -1,12 +1,16 @@
 ---
 description: Close a ticket — review, test per repo, commit with the PQF footer, push, open the MR to the correct target, and transition the Jira issue. Owns the closing half of the task lifecycle (absorbs the former jira-feature / jira-bugfix finish).
 argument-hint: [PQF-<key>]
+model: sonnet
 ---
 
 # /ship-task
 
 Closing ritual for a ticket. **Orchestration only — sequences the skills + the gates no single skill
 owns.** Reads project identity from [`../profiles/quapp/profile.md`](../profiles/quapp/profile.md).
+Runs on **sonnet**; individual review lenses escalate per
+[`../rules/model-routing.md`](../rules/model-routing.md) (deep lenses → opus subagent; security is
+always opus-class).
 
 ## Steps
 

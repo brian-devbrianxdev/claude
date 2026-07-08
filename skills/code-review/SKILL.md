@@ -22,6 +22,18 @@ Blocker / Major / Minor / Nit, and distinguish a real rule violation from a styl
 
 For **security** (OWASP, injection, secrets, auth) use the separate [security-review](../security-review/SKILL.md) skill.
 
+## Model routing ([`../../rules/model-routing.md`](../../rules/model-routing.md))
+Routine lenses (correctness, standards, project-rules, api-contract) run **inline at sonnet-class**.
+Escalate to **opus** when the review needs deep reasoning:
+- the **concurrency** or **architecture** lens applies, or
+- the diff spans **≥2 repos** or **>10 files**, or
+- the change touches auth/JWT/rate-limit surface.
+
+To escalate without switching the session model, run just that lens in the **`deep-reviewer`** agent
+(`../../agents/deep-reviewer.md`, pinned to opus): `Agent(subagent_type: "deep-reviewer",
+prompt: "<lens name + lens reference path + file list/diff>")`, then merge its findings into the
+single ranked table. One deep-reviewer per deep lens — don't send the routine lenses with it.
+
 ## Default flow (review a diff before MR)
 1. **Detect scope** — `git status` / `git diff` (or `git diff <base>...`) in the changed repo(s);
    identify which repo(s) and what changed. Read [`../../profiles/quapp/profile.md`](../../profiles/quapp/profile.md)

@@ -10,6 +10,11 @@ Bridges scoping and implementation: given a ticket, decide **how to solve it**, 
 [change-implementation](../change-implementation/SKILL.md) (the *do*). **Read-only on source — no code
 edits.** The one allowed write: post the finished solution + plan as a **comment on the ticket**.
 
+> **Model routing:** opus-class ([`../../rules/model-routing.md`](../../rules/model-routing.md)) —
+> weighing alternatives and estimating under ambiguity needs deep reasoning; suggest `/model opus`
+> once if the session runs cheaper. The mechanical tail (posting the Jira comment, setting fields)
+> is fine at any tier.
+
 **Language:** write the solution + plan **in Vietnamese** (both the chat reply and the ticket comment).
 Keep code identifiers, file paths, `path:line` refs, repo/branch names, and technical terms in their
 original form — translate the prose, not the symbols.

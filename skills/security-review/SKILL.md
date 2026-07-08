@@ -7,6 +7,11 @@ description: Java security checklist covering OWASP Top 10, input validation, in
 
 Security checklist for Java applications based on OWASP Top 10 and secure coding practices.
 
+> **Model routing:** opus-class ([`../../rules/model-routing.md`](../../rules/model-routing.md)) —
+> security review is never routed below opus. When invoked from `/ship-task` (which runs on sonnet),
+> run this review in the **`deep-reviewer`** agent (`../../agents/deep-reviewer.md`, pinned to opus)
+> with the security lens + this checklist, and merge its findings.
+
 ## When to Use
 - Security code review
 - Before production releases

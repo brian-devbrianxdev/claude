@@ -1,11 +1,13 @@
 ---
 description: Open a ticket — fetch/create the Jira issue, scope it, confirm the branch base, move it In Progress, and create a correctly-named branch. Owns the opening half of the task lifecycle (absorbs the former jira-feature / jira-bugfix start).
 argument-hint: PQF-<key> [bug|feature] [pasted ticket text]
+model: sonnet
 ---
 
 # /start-task
 
 Opening ritual for a ticket. **Orchestration only — do not write feature code here.**
+Runs on **sonnet** (routine lifecycle work — see [`../rules/model-routing.md`](../rules/model-routing.md)).
 Reads project identity from [`../profiles/quapp/profile.md`](../profiles/quapp/profile.md)
 (tracker key, host, git user, branch model).
 

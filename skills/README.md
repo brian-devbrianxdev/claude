@@ -7,6 +7,9 @@ reference files loaded only when their section is needed.
 - **Project identity** (tracker key, GitLab host, branch model, git user) →
   [`../profiles/quapp/profile.md`](../profiles/quapp/profile.md).
 - **Workspace rules** (layering, JDK matrix, two DBs, contract sync, Java gate) → [`../rules/`](../rules/).
+- **Model routing** (which Claude tier each skill/phase runs on — haiku/sonnet/opus/inherit) →
+  [`../rules/model-routing.md`](../rules/model-routing.md). The mapping lives **only** there;
+  skills that act on it (commands, subagent fan-outs, opus-class skills) link back to it.
 - Skills are named by **capability**, not project or tool — all project specifics live in the profile
   and rules, so the set is portable to another project by swapping those.
 
@@ -54,11 +57,12 @@ The write-time **Java gate** is now a rule: [`../rules/java.md`](../rules/java.m
   `jira-ticket-audit` + `quapp-release-audit` → `completion-audit`; absorbed `jira-feature` +
   `jira-bugfix` into `/start-task` + `/ship-task`; retired the `java-coding-standards` gate into
   `../rules/java.md`; and renamed every `quapp-*` / tool-named skill to a capability name.
-- Result: **29 skills → 12** + 2 commands, no capability lost (except the rarely-used
+- Result: **29 skills → 13** + 2 commands, no capability lost (except the rarely-used
   `java-migration`, archived under `../_archived-skills/`).
 
 ## Adding a new skill
-- [ ] No overlap with the 12 above. [ ] Single responsibility, one session.
+- [ ] No overlap with the 13 above. [ ] Single responsibility, one session.
+- [ ] Assigned a model tier in [`../rules/model-routing.md`](../rules/model-routing.md) (add a row there).
 - [ ] **Capability-named**, not project/tool-named. [ ] Project specifics → `profiles/`, rules → `rules/`.
 
 Then create `<skill-name>/SKILL.md`, add a row above, and link any reference files from `SKILL.md`.

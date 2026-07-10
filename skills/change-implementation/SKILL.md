@@ -14,7 +14,9 @@ approves the plan (step 5).
 
 ## Workflow Steps (mandatory, in order)
 1. **Read the current code first.** Open the actual files involved and understand existing patterns
-   before forming any plan.
+   before forming any plan. Use GitNexus `context` on the symbols you'll touch and `impact` to list
+   every caller the diff must keep working ([`../../rules/gitnexus.md`](../../rules/gitnexus.md));
+   fold that blast radius into the plan.
 2. **Identify affected repo(s).** Map the task to repo(s) via `CLAUDE.md` → Repository Map; note the
    JDK. List every consumer if the change crosses tiers (frontend ↔ backend ↔ ai-mcp).
 3. **Read relevant `.claude/rules/`.** The matching repo file(s) + `workspace.md` (+ `testing.md`).

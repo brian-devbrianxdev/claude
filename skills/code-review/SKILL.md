@@ -33,15 +33,20 @@ To escalate without switching the session model, run just that lens in the **`de
 (`../../agents/deep-reviewer.md`, pinned to opus): `Agent(subagent_type: "deep-reviewer",
 prompt: "<lens name + lens reference path + file list/diff>")`, then merge its findings into the
 single ranked table. One deep-reviewer per deep lens — don't send the routine lenses with it.
+deep-reviewer has **no GitNexus access** (restricted tools) — run `impact`/`detect_changes` yourself
+first and paste the relevant output into its prompt (`../../rules/gitnexus.md` rule 7).
 
 ## Default flow (review a diff before MR)
 1. **Detect scope** — `git status` / `git diff` (or `git diff <base>...`) in the changed repo(s);
    identify which repo(s) and what changed. Read [`../../profiles/quapp/profile.md`](../../profiles/quapp/profile.md)
-   and the touched repo's [`../../rules/`](../../rules/) files.
+   and the touched repo's [`../../rules/`](../../rules/) files. Size the blast radius with GitNexus
+   `detect_changes` (graph impact of the working diff) + `impact` on changed public symbols, and
+   `api_impact`/`shape_check` when a route changed ([`../../rules/gitnexus.md`](../../rules/gitnexus.md)).
 2. **Run the relevant lenses** from the table — always correctness + project-rules on a diff; add
    concurrency/performance/api-contract/architecture only if the change touches them.
 3. **Cross-tier contract sync** — no codegen exists; a backend/ai-mcp DTO or route change with no
-   matching frontend/ext consumer edit is a finding (see project-rules.md).
+   matching frontend/ext consumer edit is a finding (see project-rules.md). GitNexus graphs are
+   per-repo and **cannot** see this — a clean single-repo `impact` is not proof of cross-tier safety.
 4. **Rank findings** at `file:line` with a concrete fix; mark uncertain ones *Unknown / needs confirmation*.
 
 ## Output

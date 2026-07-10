@@ -59,7 +59,9 @@ grepping branches/commits). Restate each ticket's goal in one line so the user c
 One agent per ticket. Each agent:
 - Maps every requirement to implementing code **and** tests (`path:line`), using the
   [rules/java.md](../../rules/java.md) routing table and `.claude/rules/*.md` to
-  know where things should live.
+  know where things should live. Prefer GitNexus (`query`/`context`/`impact` — load via ToolSearch;
+  see [rules/gitnexus.md](../../rules/gitnexus.md)) over grep to find implementing symbols and to
+  fill `filesTouched[].symbols`; the graph is per-repo, so `contracts[]` cross-tier mapping stays manual.
 - Scores each requirement ✅ Done / 🟡 Partial / ❌ Missing / ⚠️ Unknown and computes the ticket's
   completion % (Done=1.0, Partial=0.5, Missing=0; Unknown excluded from denominator, reported separately).
 - Records its **footprint** — the raw material for conflict detection:

@@ -10,6 +10,9 @@ reference files loaded only when their section is needed.
 - **Model routing** (which Claude tier each skill/phase runs on — haiku/sonnet/opus/inherit) →
   [`../rules/model-routing.md`](../rules/model-routing.md). The mapping lives **only** there;
   skills that act on it (commands, subagent fan-outs, opus-class skills) link back to it.
+- **GitNexus** (knowledge-graph navigation: which MCP tool per phase, freshness, cross-repo caveat) →
+  [`../rules/gitnexus.md`](../rules/gitnexus.md). Usage lives **only** there; task-scoping,
+  bug-investigation, code-review, and change-implementation link back to it.
 - Skills are named by **capability**, not project or tool — all project specifics live in the profile
   and rules, so the set is portable to another project by swapping those.
 

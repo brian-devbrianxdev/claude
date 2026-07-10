@@ -34,7 +34,9 @@ Diagnose **why** a bug happens and **where** in the code, starting from a Jira t
 If repro steps or the stack trace are missing, state what's needed — don't guess the cause from a vague summary.
 
 ### Step 2 — Reproduce / locate the failure point
-- Map the stack trace top frame to a concrete `file:line`; read that method and its callers.
+- Map the stack trace top frame to a concrete `file:line`; read that method and its callers —
+  use GitNexus `context` (all callers/refs in one call) and `trace` ("how does entrypoint A reach
+  failing symbol B?") instead of hand-chaining callers ([`../../rules/gitnexus.md`](../../rules/gitnexus.md)).
 - If no stack trace, reproduce from the steps (run the relevant test/endpoint) or trace the described
   behavior through the code to where it diverges from "expected".
 - Pin the **exact line/condition** where behavior first goes wrong (the failure point), distinct from
@@ -50,7 +52,9 @@ Common buckets to consider:
 
 ### Step 4 — Verify the cause (don't just assert it)
 Confirm the chosen hypothesis with evidence, not intuition:
-- trace the data/flow from input to the failure point and show the broken link,
+- trace the data/flow from input to the failure point and show the broken link (GitNexus `trace`
+  gives the call path; verify each hop by reading the code — graph edges are evidence, not proof),
+- size the blast radius of the suspect symbol with `impact` (other affected call sites → Scope line),
 - check git history for when it was introduced (`git log -L`, `git blame` on the suspect lines),
 - write or run a minimal probe/test that **reproduces** the failure (a failing test is the strongest proof),
 - rule out the other hypotheses explicitly.

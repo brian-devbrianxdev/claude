@@ -93,6 +93,12 @@ points at openjdk@21). Match the repo's JDK when building from a terminal.
 - JupyterLab MCP bridge: `ai/quapp-jupyterlab-ai-assistant-ext/quapp_jupyterlab_ai_assistant/mcp_http_client.py`
 - Multi-schema migration: `migration/quapp-ai-mcp-migration/src/main/java/.../configuration/MultiSchemaLiquibaseConfig.java`
 
+## Code navigation — GitNexus first
+All 6 repos have a GitNexus knowledge-graph index (per-repo `.gitnexus/`). For "where does X live",
+"what calls this", "what breaks if I change it", prefer the graph tools over blind grep — see
+[`gitnexus.md`](gitnexus.md) for the tool-per-phase table, freshness rules, and the cross-repo caveat
+(single-repo graphs can't see frontend↔backend↔ai-mcp contracts — that sync check stays manual).
+
 ## Recommended first files to read for a new task
 - **Backend/platform**: `functions-backend.md` → `QuaOApplication.java` → relevant `controller/<domain>/`
   → matching `service/`, `dto/<domain>/`, `application-<concern>.yml`.

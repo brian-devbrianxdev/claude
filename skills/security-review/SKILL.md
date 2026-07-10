@@ -11,6 +11,10 @@ Security checklist for Java applications based on OWASP Top 10 and secure coding
 > security review is never routed below opus. When invoked from `/ship-task` (which runs on sonnet),
 > run this review in the **`deep-reviewer`** agent (`../../agents/deep-reviewer.md`, pinned to opus)
 > with the security lens + this checklist, and merge its findings.
+>
+> **GitNexus taint layer** ([`../../rules/gitnexus.md`](../../rules/gitnexus.md)): `explain` surfaces
+> persisted source→sink findings only after `analyze --pdg` (not built by default). If available, use
+> it as a *lead generator* — absence of a finding is never proof of safety; the checklist still runs.
 
 ## When to Use
 - Security code review

@@ -13,8 +13,10 @@ QUAPP workspace, so `change-implementation` can start from a confirmed plan. **N
 - Before `change-implementation` on anything non-trivial.
 
 ## Workflow Steps
-1. **Read the ticket/task.** If a Jira key, fetch it; otherwise use the description. Restate the goal +
-   acceptance criteria in your own words.
+1. **Read the ticket/task — including its comment thread.** If a Jira key, fetch it with `comment` in
+   `fields`; otherwise use the description. Comments from PO/BA/dev/QA often refine or override the
+   description — reconcile both (latest comment usually wins) and carry open questions as Unknowns.
+   Restate the goal + acceptance criteria in your own words.
 2. **Identify target repo(s)** from `CLAUDE.md` → Repository Map (functions-backend, functions-frontend,
    ai-mcp, jupyterlab-ai-assistant-ext, quapp-migration, quapp-ai-mcp-migration).
 3. **Read that repo's rules**: the matching `.claude/rules/*.md` (+ `workspace.md`). Note the **JDK**.

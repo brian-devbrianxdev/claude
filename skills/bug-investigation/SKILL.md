@@ -26,9 +26,11 @@ Diagnose **why** a bug happens and **where** in the code, starting from a Jira t
 ## Workflow
 
 ### Step 1 — Read the ticket
-`jira_get_issue PROJ-456`. Extract the evidence:
+`jira_get_issue PROJ-456` (include `comment` in `fields`). Extract the evidence:
 - **Steps to reproduce**, expected vs actual behavior,
 - **stack trace / error message**, affected version, environment,
+- **the comment thread** — QA/devs often add better repro steps, logs, screenshots, scope corrections,
+  or partial diagnoses below the description; the latest comment can override the original report,
 - linked issues / recent related tickets (`jira_search` for duplicates or regressions).
 
 If repro steps or the stack trace are missing, state what's needed — don't guess the cause from a vague summary.

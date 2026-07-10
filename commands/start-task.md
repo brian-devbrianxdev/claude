@@ -14,8 +14,10 @@ Reads project identity from [`../profiles/quapp/profile.md`](../profiles/quapp/p
 ## Steps
 
 1. **Capture / create the ticket.** Take the key from `$ARGUMENTS`. **If the Atlassian MCP is
-   connected**, fetch it read-only with `getJiraIssue` (title, description, acceptance criteria, and
-   only-if-relevant comments/subtasks). If no key but a description is given, offer to create the
+   connected**, fetch it read-only with `getJiraIssue` — include `comment` in `fields` and **read the
+   comment thread, not just the description**: PO/BA/dev/QA replies often refine or override the spec
+   (on conflict the latest comment usually wins; still-open questions are Unknowns to raise before
+   branching). Also note subtasks. If no key but a description is given, offer to create the
    issue (Story for a feature, Bug for a defect) via `createJiraIssue`. **If the MCP is unavailable
    or returns the wrong issue, fall back to the pasted ticket text** — Jira is never required.
    Restate the goal in one line.

@@ -50,10 +50,13 @@ ticket's footprint at once).
 ## Workflow
 
 ### Step 1 — Normalize the release
-Collect the ticket keys from the user. For each, `getJiraIssue` and extract the **flat checklist of
-atomic requirements** (acceptance criteria, or decompose the description). Note issue type (a Bug's
-criterion is *defect no longer reproduces + regression test*), linked subtasks, and the issue key (for
-grepping branches/commits). Restate each ticket's goal in one line so the user can confirm scope.
+Collect the ticket keys from the user. For each, `getJiraIssue` (include `comment` in `fields`) and
+extract the **flat checklist of atomic requirements** (acceptance criteria, or decompose the
+description) — **reconciled with the comment thread**: PO/BA/dev/QA replies refine, drop, or add
+requirements after the description was written, and the audit must score against the *final agreed*
+spec (latest comment usually wins; unresolved questions become ⚠️ Unknown criteria). Note issue type
+(a Bug's criterion is *defect no longer reproduces + regression test*), linked subtasks, and the issue
+key (for grepping branches/commits). Restate each ticket's goal in one line so the user can confirm scope.
 
 ### Step 2 — Fan out: per-ticket completeness audit (parallel)
 One agent per ticket. Each agent:

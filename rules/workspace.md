@@ -54,7 +54,7 @@ points at openjdk@21). Match the repo's JDK when building from a terminal.
 
 ## Cross-cutting pitfalls
 - **Two "QuaO" databases.** `quapp-migration` ↔ QuaO platform DB; `quapp-ai-mcp-migration` ↔ AI-MCP DB.
-  Don't add a platform changeset to the ai-mcp migration repo or vice versa (see `migration.md`).
+  Don't add a platform changeset to the ai-mcp migration repo or vice versa (see `../docs/rules/migration.md`).
 - **No generated cross-repo client.** A backend/MCP endpoint or DTO change won't propagate to the
   frontend/JupyterLab ext automatically — update the consumer by hand. *(Verified: no generated/shared
   API client is checked in. SpringDoc is present in the Java services, but no generated OpenAPI client
@@ -67,7 +67,7 @@ points at openjdk@21). Match the repo's JDK when building from a terminal.
   `quapp-migration`, `quapp-ai-mcp-migration` have minimal/empty READMEs — rely on the code and these
   rules.
 - **JupyterLab ext `CLAUDE.md`/`GEMINI.md` are symlinks to `AGENTS.md`** — edit `AGENTS.md`
-  (see `jupyterlab-ai-assistant-ext.md`).
+  (see `../docs/rules/jupyterlab-ai-assistant-ext.md`).
 
 ## General editing rules
 1. **Do not modify source unless asked.** When asked, change only the relevant repo; keep edits scoped.
@@ -96,7 +96,7 @@ points at openjdk@21). Match the repo's JDK when building from a terminal.
 ## Code navigation — GitNexus first
 All 6 repos have a GitNexus knowledge-graph index (per-repo `.gitnexus/`). For "where does X live",
 "what calls this", "what breaks if I change it", prefer the graph tools over blind grep — see
-[`gitnexus.md`](gitnexus.md) for the tool-per-phase table, freshness rules, and the cross-repo caveat
+[gitnexus.md](../docs/rules/gitnexus.md) for the tool-per-phase table, freshness rules, and the cross-repo caveat
 (single-repo graphs can't see frontend↔backend↔ai-mcp contracts — that sync check stays manual).
 
 ## Recommended first files to read for a new task

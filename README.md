@@ -9,8 +9,8 @@ and deterministic guards. Runtime state and local secrets are git-ignored.
 |------|-----------|
 | `skills/` | 13 capability-named skills (see `skills/README.md`) |
 | `commands/` | Lifecycle commands: `/start-task`, `/ship-task` (both pinned to sonnet) |
-| `agents/` | Model-pinned subagents: `deep-reviewer` (opus), `drafter` (haiku) — see `rules/model-routing.md` |
-| `rules/` | Workspace rules (layering, JDK matrix, two DBs, contract sync, the Java gate, **model routing** — `rules/model-routing.md`) |
+| `agents/` | Model-pinned subagents: `deep-reviewer` (opus), `drafter` (haiku) — see `docs/rules/model-routing.md` |
+| `rules/` | Workspace rules (layering, JDK matrix, two DBs, contract sync, the Java gate, **model routing** — `docs/rules/model-routing.md`) |
 | `profiles/quapp/` | Project identity (tracker key, GitLab host, branch model) |
 | `hooks/` | `quapp-guard.sh` — deterministic workspace guard |
 | `settings.json` | Shared hooks + theme (machine-local perms live in the git-ignored `settings.local.json`) |

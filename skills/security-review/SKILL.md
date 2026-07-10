@@ -7,12 +7,14 @@ description: Java security checklist covering OWASP Top 10, input validation, in
 
 Security checklist for Java applications based on OWASP Top 10 and secure coding practices.
 
-> **Model routing:** opus-class ([`../../rules/model-routing.md`](../../rules/model-routing.md)) —
+> **Model routing:** opus-class ([`../../docs/rules/model-routing.md`](../../docs/rules/model-routing.md)) —
 > security review is never routed below opus. When invoked from `/ship-task` (which runs on sonnet),
 > run this review in the **`deep-reviewer`** agent (`../../agents/deep-reviewer.md`, pinned to opus)
-> with the security lens + this checklist, and merge its findings.
+> with the security lens + this checklist, and merge its findings. **If code-review is also spawning
+> a deep-reviewer for the same diff, fold this checklist into that ONE agent instead of spawning a
+> second** — a separate agent re-reads the whole diff (~80-90k tokens) for no extra coverage.
 >
-> **GitNexus taint layer** ([`../../rules/gitnexus.md`](../../rules/gitnexus.md)): `explain` surfaces
+> **GitNexus taint layer** ([`../../docs/rules/gitnexus.md`](../../docs/rules/gitnexus.md)): `explain` surfaces
 > persisted source→sink findings only after `analyze --pdg` (not built by default). If available, use
 > it as a *lead generator* — absence of a finding is never proof of safety; the checklist still runs.
 

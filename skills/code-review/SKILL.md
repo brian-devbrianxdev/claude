@@ -22,26 +22,28 @@ Blocker / Major / Minor / Nit, and distinguish a real rule violation from a styl
 
 For **security** (OWASP, injection, secrets, auth) use the separate [security-review](../security-review/SKILL.md) skill.
 
-## Model routing ([`../../rules/model-routing.md`](../../rules/model-routing.md))
+## Model routing ([`../../docs/rules/model-routing.md`](../../docs/rules/model-routing.md))
 Routine lenses (correctness, standards, project-rules, api-contract) run **inline at sonnet-class**.
 Escalate to **opus** when the review needs deep reasoning:
 - the **concurrency** or **architecture** lens applies, or
 - the diff spans **≥2 repos** or **>10 files**, or
 - the change touches auth/JWT/rate-limit surface.
 
-To escalate without switching the session model, run just that lens in the **`deep-reviewer`** agent
-(`../../agents/deep-reviewer.md`, pinned to opus): `Agent(subagent_type: "deep-reviewer",
-prompt: "<lens name + lens reference path + file list/diff>")`, then merge its findings into the
-single ranked table. One deep-reviewer per deep lens — don't send the routine lenses with it.
+To escalate without switching the session model, run the deep lens(es) in the **`deep-reviewer`**
+agent (`../../agents/deep-reviewer.md`, pinned to opus): `Agent(subagent_type: "deep-reviewer",
+prompt: "<lens name(s) + lens reference path(s) + file list/diff>")`, then merge its findings into
+the single ranked table. **Spawn ONE deep-reviewer carrying all deep lenses that apply — including
+the security checklist when security-review is also needed on the same diff** (each extra agent
+re-reads the whole diff, ~80-90k tokens); don't send the routine lenses with it.
 deep-reviewer has **no GitNexus access** (restricted tools) — run `impact`/`detect_changes` yourself
-first and paste the relevant output into its prompt (`../../rules/gitnexus.md` rule 7).
+first and paste the relevant output into its prompt (`../../docs/rules/gitnexus.md` rule 7).
 
 ## Default flow (review a diff before MR)
 1. **Detect scope** — `git status` / `git diff` (or `git diff <base>...`) in the changed repo(s);
    identify which repo(s) and what changed. Read [`../../profiles/quapp/profile.md`](../../profiles/quapp/profile.md)
    and the touched repo's [`../../rules/`](../../rules/) files. Size the blast radius with GitNexus
    `detect_changes` (graph impact of the working diff) + `impact` on changed public symbols, and
-   `api_impact`/`shape_check` when a route changed ([`../../rules/gitnexus.md`](../../rules/gitnexus.md)).
+   `api_impact`/`shape_check` when a route changed ([`../../docs/rules/gitnexus.md`](../../docs/rules/gitnexus.md)).
 2. **Run the relevant lenses** from the table — always correctness + project-rules on a diff; add
    concurrency/performance/api-contract/architecture only if the change touches them.
 3. **Cross-tier contract sync** — no codegen exists; a backend/ai-mcp DTO or route change with no

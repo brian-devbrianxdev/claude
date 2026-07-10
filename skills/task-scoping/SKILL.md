@@ -20,7 +20,7 @@ QUAPP workspace, so `change-implementation` can start from a confirmed plan. **N
 2. **Identify target repo(s)** from `CLAUDE.md` → Repository Map (functions-backend, functions-frontend,
    ai-mcp, jupyterlab-ai-assistant-ext, quapp-migration, quapp-ai-mcp-migration).
 3. **Read that repo's rules**: the matching `.claude/rules/*.md` (+ `workspace.md`). Note the **JDK**.
-4. **Locate affected files** — GitNexus first ([`../../rules/gitnexus.md`](../../rules/gitnexus.md)):
+4. **Locate affected files** — GitNexus first ([`../../docs/rules/gitnexus.md`](../../docs/rules/gitnexus.md)):
    `query` the concept + `gitnexus://repo/{name}/clusters` to find the owning area, then `context` on
    candidate symbols; fall back to grep for config/YAML/SQL. List concrete paths.
 5. **Assess cross-cutting impact**:

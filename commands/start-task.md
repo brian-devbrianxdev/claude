@@ -7,7 +7,7 @@ model: sonnet
 # /start-task
 
 Opening ritual for a ticket. **Orchestration only — do not write feature code here.**
-Runs on **sonnet** (routine lifecycle work — see [`../rules/model-routing.md`](../rules/model-routing.md)).
+Runs on **sonnet** (routine lifecycle work — see [`../docs/rules/model-routing.md`](../docs/rules/model-routing.md)).
 Reads project identity from [`../profiles/quapp/profile.md`](../profiles/quapp/profile.md)
 (tracker key, host, git user, branch model).
 
@@ -39,3 +39,8 @@ Reads project identity from [`../profiles/quapp/profile.md`](../profiles/quapp/p
 ## Output
 A scope summary (repo / JDK / files / contracts), the confirmed base, the In-Progress ticket, and a
 created, correctly-named branch in the right repo — ready to implement.
+
+## Token hygiene
+End the summary by recommending the user start the implementation in a **fresh session** (`/clear`)
+— all needed state (scope, plan, base) lives on the ticket and the branch, and carrying this
+conversation into implementation multiplies context cost on every call.

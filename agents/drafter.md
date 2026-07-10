@@ -1,6 +1,6 @@
 ---
 name: drafter
-description: Haiku-class mechanical drafter — changelog sections from git log output, bulk summaries, checklist/format verification of another agent's output. Spawned per rules/model-routing.md for high-volume mechanical text; never used for code changes or reasoning tasks.
+description: Haiku-class mechanical drafter — changelog sections from git log output, bulk summaries, checklist/format verification of another agent's output. Spawned per docs/rules/model-routing.md for high-volume mechanical text; never used for code changes or reasoning tasks.
 model: haiku
 tools: Read, Grep, Glob, Bash
 ---

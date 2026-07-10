@@ -9,7 +9,7 @@ Diagnose **why** a bug happens and **where** in the code, starting from a Jira t
 **read-only** — it produces a root-cause analysis, not a fix. When the cause is confirmed, hand off to
 [/ship-task](../../commands/ship-task.md) to implement and ship the fix.
 
-> **Model routing:** opus-class ([`../../rules/model-routing.md`](../../rules/model-routing.md)) —
+> **Model routing:** opus-class ([`../../docs/rules/model-routing.md`](../../docs/rules/model-routing.md)) —
 > root-cause analysis is never routed below opus. If the session runs a cheaper model, suggest
 > `/model opus` before diving in (once, at the start).
 
@@ -38,7 +38,7 @@ If repro steps or the stack trace are missing, state what's needed — don't gue
 ### Step 2 — Reproduce / locate the failure point
 - Map the stack trace top frame to a concrete `file:line`; read that method and its callers —
   use GitNexus `context` (all callers/refs in one call) and `trace` ("how does entrypoint A reach
-  failing symbol B?") instead of hand-chaining callers ([`../../rules/gitnexus.md`](../../rules/gitnexus.md)).
+  failing symbol B?") instead of hand-chaining callers ([`../../docs/rules/gitnexus.md`](../../docs/rules/gitnexus.md)).
 - If no stack trace, reproduce from the steps (run the relevant test/endpoint) or trace the described
   behavior through the code to where it diverges from "expected".
 - Pin the **exact line/condition** where behavior first goes wrong (the failure point), distinct from

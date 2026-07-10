@@ -15,7 +15,7 @@ approves the plan (step 5).
 ## Workflow Steps (mandatory, in order)
 1. **Read the current code first.** Open the actual files involved and understand existing patterns
    before forming any plan. Use GitNexus `context` on the symbols you'll touch and `impact` to list
-   every caller the diff must keep working ([`../../rules/gitnexus.md`](../../rules/gitnexus.md));
+   every caller the diff must keep working ([`../../docs/rules/gitnexus.md`](../../docs/rules/gitnexus.md));
    fold that blast radius into the plan.
 2. **Identify affected repo(s).** Map the task to repo(s) via `CLAUDE.md` → Repository Map; note the
    JDK. List every consumer if the change crosses tiers (frontend ↔ backend ↔ ai-mcp).
@@ -69,6 +69,11 @@ Risks / follow-ups: <…>   Cross-tier edits needed elsewhere: <…>
 - [ ] Correct JDK; relevant tests/lint actually run and reported.
 - [ ] Cross-tier consumers + migration repo handled.
 - [ ] No secrets committed; no commit/push unless asked.
+
+## Token hygiene
+In the final summary, recommend running **`/ship-task` in a fresh session** (`/clear`) — the diff,
+branch, and ticket carry all required state; dragging the scoping/implementation transcript into the
+ship phase is the single largest token cost in a full-lifecycle session.
 
 ## QUAPP Reminders
 - See `CLAUDE.md` §5 safety rules and the repo's `.claude/rules/*.md`.

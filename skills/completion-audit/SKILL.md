@@ -42,7 +42,7 @@ ticket's footprint at once).
   spawning a workflow, but default to the workflow for ≥4 tickets or ≥2 repos touched.
 - Per-ticket completeness logic mirrors [single-ticket.md](single-ticket.md) exactly
   (criteria → evidence → ✅/🟡/❌/⚠️ → %). Reuse it; don't reinvent the scoring.
-- **Model routing** ([`../../rules/model-routing.md`](../../rules/model-routing.md)): per-ticket audit
+- **Model routing** ([`../../docs/rules/model-routing.md`](../../docs/rules/model-routing.md)): per-ticket audit
   workers = **sonnet** (evidence mapping); the cross-ticket conflict synthesis = **opus** (cross-module
   contract reasoning); the orchestrator + final Go/No-Go verdict run at the **session model** (inherit —
   no `model` override). The script below already sets these.
@@ -63,7 +63,7 @@ One agent per ticket. Each agent:
 - Maps every requirement to implementing code **and** tests (`path:line`), using the
   [rules/java.md](../../rules/java.md) routing table and `.claude/rules/*.md` to
   know where things should live. Prefer GitNexus (`query`/`context`/`impact` — load via ToolSearch;
-  see [rules/gitnexus.md](../../rules/gitnexus.md)) over grep to find implementing symbols and to
+  see [docs/rules/gitnexus.md](../../docs/rules/gitnexus.md)) over grep to find implementing symbols and to
   fill `filesTouched[].symbols`; the graph is per-repo, so `contracts[]` cross-tier mapping stays manual.
 - Scores each requirement ✅ Done / 🟡 Partial / ❌ Missing / ⚠️ Unknown and computes the ticket's
   completion % (Done=1.0, Partial=0.5, Missing=0; Unknown excluded from denominator, reported separately).

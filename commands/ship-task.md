@@ -9,7 +9,7 @@ model: sonnet
 Closing ritual for a ticket. **Orchestration only — sequences the skills + the gates no single skill
 owns.** Reads project identity from [`../profiles/quapp/profile.md`](../profiles/quapp/profile.md).
 Runs on **sonnet**; individual review lenses escalate per
-[`../rules/model-routing.md`](../rules/model-routing.md) (deep lenses → opus subagent; security is
+[`../docs/rules/model-routing.md`](../docs/rules/model-routing.md) (deep lenses → opus subagent; security is
 always opus-class).
 
 ## Steps
@@ -19,6 +19,10 @@ always opus-class).
    auth, also run **`security-review`**. Resolve Blocker/Major before continuing.
 2. **Test per repo.** For each touched repo, run its command from `../rules/testing.md` with the
    repo's JDK; a bug fix needs a regression test. **Report real results — never claim green unrun.**
+   If failures look pre-existing (not in the diff's files), **delegate the baseline check to one
+   `general-purpose` subagent (model: sonnet)** — stash, run the failing classes on the clean tree,
+   pop, report — instead of doing the stash/run/pop round-trips inline (each inline call re-reads
+   the full conversation context).
 3. **STOP gate.** If any test fails or any review Blocker/Major is unresolved, **STOP — do not commit,
    push, or open an MR.** Report what is red and wait.
 4. **Commit.** Use the **`commit`** skill (conventional format). The PQF key (from `$ARGUMENTS` or the

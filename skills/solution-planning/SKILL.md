@@ -35,7 +35,10 @@ original form — translate the prose, not the symbols.
    List the atomic requirements — these are what you plan and estimate against.
 2. **Get the scope.** Reuse [task-scoping](../task-scoping/SKILL.md) output (target repo(s), JDK,
    affected files/layers, cross-repo contract/DB impact) or derive it. Cite real `path:line`.
-3. **Design the solution.** Propose a **recommended approach** and, when the solution space is wide,
+3. **Design the solution.** For a large or ambiguous ticket (Low confidence, conflicting comments,
+   wide solution space), offer to run a [grilling](../grilling/SKILL.md) session first — one
+   question at a time with recommended answers — before locking the design and estimate.
+   Propose a **recommended approach** and, when the solution space is wide,
    **1 alternative** with trade-offs (complexity, risk, blast radius, reversibility). Respect the
    workspace constraints from [`../../rules/`](../../rules/): strict layering, no JPA-entity leakage,
    `controller/v1/` versioning, the correct migration repo, no weakened auth. Note explicit

@@ -44,6 +44,10 @@ over ad-hoc `Agent(model: …)` calls for those roles.
 | `changelog` | haiku | For >~30 commits, delegate to a haiku subagent and relay its output |
 | `release-note` | sonnet | Jira/Confluence gathering + inclusion judgment + user-facing writing; run inline |
 | `mr-feedback` | sonnet | Apply requested edits thread-by-thread |
+| `/review-mr` (whole command) | sonnet | Pinned via frontmatter; deep/security lenses escalate per the code-review row (one `deep-reviewer`) |
+| `/handoff` | sonnet | Pinned via frontmatter; summarization + indexing, no deep reasoning |
+| `grilling` | inherit | Interactive judgment about the user's plan — run at the session model |
+| `merge-conflict-resolution` | sonnet | Escalate to opus if conflicting intents span ≥2 repos or touch auth/contracts |
 | Output verification / checklist grading (any workflow) | haiku | e.g. "does this footprint match the schema/checklist" |
 | `code-craft` / `spring-stack-patterns` / `test-authoring` | n/a | Knowledge references — they run at whatever tier loaded them |
 

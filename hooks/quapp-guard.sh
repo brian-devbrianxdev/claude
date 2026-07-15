@@ -2,8 +2,10 @@
 # quapp-guard.sh — deterministic guard for the Quapp multi-root workspace.
 #
 # Registered as a PreToolUse hook (Bash + Edit|Write) in .claude/settings.json.
-# Advisory (additionalContext) by default; blocks ONLY edits to the JupyterLab
-# CLAUDE.md / GEMINI.md symlinks. Disable entirely with QUAPP_GUARD=off.
+# Advisory (additionalContext) by default; BLOCKS destructive git commands
+# (reset --hard, clean -f, branch -D, checkout/restore ., push --force) and
+# edits to the JupyterLab CLAUDE.md / GEMINI.md symlinks.
+# Disable entirely with QUAPP_GUARD=off.
 #
 # Output matches the existing hook convention: a single hookSpecificOutput JSON.
 
@@ -31,6 +33,28 @@ case "$tool" in
   Bash)
     cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // ""')"
     cwd="$(printf '%s' "$input" | jq -r '.cwd // ""')"
+
+    # BLOCK: destructive git commands (adapted from mattpocock/skills git-guardrails, MIT).
+    # Plain `git push` stays allowed — /ship-task needs it; only history/worktree destroyers deny.
+    if printf '%s' "$cmd" | grep -Eq '(^|[^[:alnum:]])git[[:space:]]'; then
+      if printf '%s' "$cmd" | grep -Eq 'git[[:space:]]+reset[[:space:]]+(-[^ ]+[[:space:]]+)*--hard'; then
+        emit_deny "git reset --hard discards uncommitted work. If this is truly intended, ask the user to run it themselves (or use git stash first)."
+      fi
+      if printf '%s' "$cmd" | grep -Eq 'git[[:space:]]+clean[[:space:]]+-[a-zA-Z]*f'; then
+        emit_deny "git clean -f deletes untracked files irreversibly. Ask the user to run it themselves if intended."
+      fi
+      if printf '%s' "$cmd" | grep -Eq 'git[[:space:]]+branch[[:space:]]+(-[^ ]+[[:space:]]+)*-D([[:space:]]|$)'; then
+        emit_deny "git branch -D force-deletes a branch (unmerged work lost). Use -d, or ask the user."
+      fi
+      if printf '%s' "$cmd" | grep -Eq 'git[[:space:]]+(checkout|restore)[[:space:]]+(--[[:space:]]+)?\.([[:space:]]|$|;)'; then
+        emit_deny "git checkout/restore . wipes ALL uncommitted changes in the worktree. Restore specific files by path instead, or ask the user."
+      fi
+      if printf '%s' "$cmd" | grep -Eq 'git[[:space:]]+push([[:space:]]|$)' \
+         && printf '%s' "$cmd" | grep -Eq '(^|[[:space:]])(--force|-f)([[:space:]]|$)' \
+         && ! printf '%s' "$cmd" | grep -q 'force-with-lease'; then
+        emit_deny "git push --force can destroy remote history. If a force push is genuinely needed, use --force-with-lease and confirm with the user first."
+      fi
+    fi
 
     # yarn-not-npm: npm used inside the frontend repo
     if printf '%s' "$cmd" | grep -Eq '(^|[^[:alnum:]])npm([[:space:]]|$)' \

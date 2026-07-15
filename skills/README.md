@@ -16,7 +16,7 @@ reference files loaded only when their section is needed.
 - Skills are named by **capability**, not project or tool — all project specifics live in the profile
   and rules, so the set is portable to another project by swapping those.
 
-## The 13 skills
+## The 16 skills
 
 ### Core — write/refactor (auto-pulled while coding)
 | Skill | Capability |
@@ -38,7 +38,8 @@ reference files loaded only when their section is needed.
 | [solution-planning](solution-planning/) | Solution design + ordered plan + effort/time estimate (read-only) |
 | [change-implementation](change-implementation/) | Guarded, approval-gated implement flow |
 | [completion-audit](completion-audit/) | Ticket completeness — 1 ticket or a whole release (+ conflict detection); Workflow fan-out |
-| [bug-investigation](bug-investigation/) | Read-only root-cause diagnosis |
+| [bug-investigation](bug-investigation/) | Read-only root-cause diagnosis (feedback-loop-first) |
+| [grilling](grilling/) | One-question-at-a-time interview to stress-test a plan/decision before locking it |
 
 ### Utility
 | Skill | Capability |
@@ -47,11 +48,15 @@ reference files loaded only when their section is needed.
 | [changelog](changelog/) | Changelogs from git commits |
 | [release-note](release-note/) | Fill a Confluence release note (Production/Staging) from Jira tickets (Added/Changed/Fixed; env-targeted bug rule) |
 | [mr-feedback](mr-feedback/) | Resolve reviewer threads in a GitLab MR |
+| [merge-conflict-resolution](merge-conflict-resolution/) | Resolve merge/rebase conflicts (intent-first; squash-merge + stale-index traps) |
 
 ### Commands (lifecycle orchestrators) — [`../commands/`](../commands/)
 - **`/start-task`** — fetch/create ticket → `task-scoping` → confirm base (STOP) → In Progress → branch.
 - **`/ship-task`** — `code-review` → secret-scan gate → test per repo (STOP if red) → `commit` → push + MR → transition.
 - **`/review-mr`** — review an MR already open on GitLab (`glab mr view/diff` → code-review lenses → optionally post a note; never approves).
+- **`/handoff`** — compact the session into a handoff doc (saved outside the repos) for a fresh session to resume.
+
+Skill-authoring reference: [`../docs/reference/writing-great-skills.md`](../docs/reference/writing-great-skills.md).
 
 The write-time **Java gate** is now a rule: [`../rules/java.md`](../rules/java.md) (no longer a skill).
 
@@ -66,7 +71,8 @@ The write-time **Java gate** is now a rule: [`../rules/java.md`](../rules/java.m
   `java-migration`, archived under `../_archived-skills/`).
 
 ## Adding a new skill
-- [ ] No overlap with the 13 above. [ ] Single responsibility, one session.
+- [ ] No overlap with the 16 above. [ ] Single responsibility, one session.
+- [ ] Written per [`../docs/reference/writing-great-skills.md`](../docs/reference/writing-great-skills.md).
 - [ ] Assigned a model tier in [`../docs/rules/model-routing.md`](../docs/rules/model-routing.md) (add a row there).
 - [ ] **Capability-named**, not project/tool-named. [ ] Project specifics → `profiles/`, rules → `rules/`.
 

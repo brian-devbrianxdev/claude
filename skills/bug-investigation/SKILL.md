@@ -35,14 +35,35 @@ Diagnose **why** a bug happens and **where** in the code, starting from a Jira t
 
 If repro steps or the stack trace are missing, state what's needed — don't guess the cause from a vague summary.
 
-### Step 2 — Reproduce / locate the failure point
+### Step 2 — Build a feedback loop, then locate the failure point
+
+**The loop IS the investigation** — hypotheses without a pass/fail signal are guesses. Before Step 3,
+build a **tight, red-capable signal**: one command you have already run at least once, that goes red
+on *this* bug's exact symptom (not just "doesn't crash") and will go green once fixed. Spend
+disproportionate effort here; a 2-second deterministic loop is a debugging superpower.
+
+Ways to construct one, in rough order (Quapp-adjusted — no Docker on this machine, so Testcontainers
+paths are out; see [`../../rules/testing.md`](../../rules/testing.md) per repo):
+1. **Failing JUnit/Jest test** at whatever seam reaches the bug (`./gradlew test --tests <Class>`, `yarn test <file>`).
+2. **curl/HTTP script** against a locally running service (`bootRun` with `application-local.yml`, or dev env endpoints).
+3. **Replay a captured payload/trace** (request body from logs or the ticket) through the code path in isolation.
+4. **Throwaway harness** — minimal subset (one service, mocked deps) exercising the failing path; for DB-shaped bugs, throwaway Homebrew postgres (the `quapp-migration` verification pattern).
+5. **Bisection** — bug appeared between two known commits → automate the check and `git bisect run`.
+
+Tighten it: faster (narrow test scope), sharper (assert the exact symptom), deterministic (pin time,
+seed randomness). Non-deterministic bug → don't chase a clean repro, **raise the reproduction rate**
+(loop the trigger 100×, add stress/timing pressure) until it's debuggable. If you genuinely cannot
+build a loop, **stop and say so** — list what you tried, ask for a captured artifact (log dump, HAR,
+payload) or env access; do not proceed to hypotheses without one.
+
+Then locate the failure point:
 - Map the stack trace top frame to a concrete `file:line`; read that method and its callers —
   use GitNexus `context` (all callers/refs in one call) and `trace` ("how does entrypoint A reach
   failing symbol B?") instead of hand-chaining callers ([`../../docs/rules/gitnexus.md`](../../docs/rules/gitnexus.md)).
-- If no stack trace, reproduce from the steps (run the relevant test/endpoint) or trace the described
-  behavior through the code to where it diverges from "expected".
 - Pin the **exact line/condition** where behavior first goes wrong (the failure point), distinct from
   where the symptom surfaces (e.g. NPE thrown at line 88, but the null originates at line 40).
+
+*(Loop-first discipline adapted from [mattpocock/skills](https://github.com/mattpocock/skills) `diagnosing-bugs`, MIT.)*
 
 ### Step 3 — Form hypotheses
 List candidate causes, most-likely first. For each: what code path would produce the observed symptom?
@@ -58,7 +79,8 @@ Confirm the chosen hypothesis with evidence, not intuition:
   gives the call path; verify each hop by reading the code — graph edges are evidence, not proof),
 - size the blast radius of the suspect symbol with `impact` (other affected call sites → Scope line),
 - check git history for when it was introduced (`git log -L`, `git blame` on the suspect lines),
-- write or run a minimal probe/test that **reproduces** the failure (a failing test is the strongest proof),
+- drive the **Step-2 feedback loop** against the hypothesis: it must go red for the reason the
+  hypothesis predicts (and stay green when the suspect condition is neutralized),
 - rule out the other hypotheses explicitly.
 
 Distinguish **root cause** (the underlying defect) from **trigger** (the input that exposes it) and

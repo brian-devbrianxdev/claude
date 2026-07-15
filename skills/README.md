@@ -45,11 +45,13 @@ reference files loaded only when their section is needed.
 |-------|-----------|
 | [commit](commit/) | Conventional commit messages |
 | [changelog](changelog/) | Changelogs from git commits |
+| [release-note](release-note/) | Fill a Confluence release note (Production/Staging) from Jira tickets (Added/Changed/Fixed; env-targeted bug rule) |
 | [mr-feedback](mr-feedback/) | Resolve reviewer threads in a GitLab MR |
 
 ### Commands (lifecycle orchestrators) — [`../commands/`](../commands/)
 - **`/start-task`** — fetch/create ticket → `task-scoping` → confirm base (STOP) → In Progress → branch.
-- **`/ship-task`** — `code-review` → test per repo (STOP if red) → `commit` → push + MR → transition.
+- **`/ship-task`** — `code-review` → secret-scan gate → test per repo (STOP if red) → `commit` → push + MR → transition.
+- **`/review-mr`** — review an MR already open on GitLab (`glab mr view/diff` → code-review lenses → optionally post a note; never approves).
 
 The write-time **Java gate** is now a rule: [`../rules/java.md`](../rules/java.md) (no longer a skill).
 

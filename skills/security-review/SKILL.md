@@ -25,6 +25,20 @@ Security checklist for Java applications based on OWASP Top 10 and secure coding
 - Reviewing authentication/authorization code
 - Checking for injection vulnerabilities
 
+## Step 0 — deterministic secret scan (always first)
+
+Before any LLM review, run the bundled script against each touched repo:
+
+```sh
+bash .claude/skills/security-review/secret-scan.sh <repo-dir>
+```
+
+It scans added lines in the uncommitted diff + untracked files for high-confidence credential
+shapes (AWS/GitLab/GitHub/Anthropic/Stripe/Slack tokens, private keys, JWTs) and `.env` files.
+Exit 1 = BLOCKER (never commit); WARN lines need human judgment. The script is the floor, not the
+ceiling — a clean scan does not skip the checklist below (it can't see logic flaws, weak crypto,
+or secrets echoed to logs).
+
 ---
 
 ## OWASP Top 10 Quick Reference

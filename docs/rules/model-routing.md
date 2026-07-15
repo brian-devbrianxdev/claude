@@ -42,6 +42,7 @@ over ad-hoc `Agent(model: …)` calls for those roles.
 | `completion-audit` — orchestration + final verdict | inherit | Session model synthesizes |
 | `commit` | haiku-class | Trivial; run inline at whatever model is active — a subagent isn't worth the latency |
 | `changelog` | haiku | For >~30 commits, delegate to a haiku subagent and relay its output |
+| `release-note` | sonnet | Jira/Confluence gathering + inclusion judgment + user-facing writing; run inline |
 | `mr-feedback` | sonnet | Apply requested edits thread-by-thread |
 | Output verification / checklist grading (any workflow) | haiku | e.g. "does this footprint match the schema/checklist" |
 | `code-craft` / `spring-stack-patterns` / `test-authoring` | n/a | Knowledge references — they run at whatever tier loaded them |

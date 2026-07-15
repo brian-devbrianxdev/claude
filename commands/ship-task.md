@@ -25,6 +25,10 @@ always opus-class).
    the full conversation context).
 3. **STOP gate.** If any test fails or any review Blocker/Major is unresolved, **STOP — do not commit,
    push, or open an MR.** Report what is red and wait.
+   Also run the deterministic secret scan per touched repo:
+   `bash .claude/skills/security-review/secret-scan.sh <repo-dir>` (from the workspace root). Exit 1
+   (any BLOCKER line) is a commit blocker — fix or move the secret to env/Secrets Manager first;
+   WARN lines get a human judgment call in the summary.
 4. **Commit.** Use the **`commit`** skill (conventional format). The PQF key (from `$ARGUMENTS` or the
    branch name) **must be in the footer**.
 5. **Push + MR.** Push with `-u` and open the MR via **GitLab push options** (`glab`). MR **title** =

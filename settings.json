@@ -1,8 +1,5 @@
 {
   "model": "sonnet",
-  "permissions": {
-    "defaultMode": "auto"
-  },
   "theme": "dark",
   "hooks": {
     "SessionStart": [

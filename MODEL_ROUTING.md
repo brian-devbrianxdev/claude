@@ -18,18 +18,20 @@ other project.
   `security-review` for the concurrency / architecture / security lenses and large cross-repo
   diffs, exactly as `docs/rules/model-routing.md` already specifies. Nothing about this path
   changes — it stays automatic and stays at `opus`.
-- **Advisor — Claude Fable 5, via `.claude/agents/engineering-advisor.md`.** A new, scarcer tier
-  *above* `opus`: read-only (`Read, Grep, Glob` only — no edits, no commands), manually invoked by
-  the orchestrating session (never auto-spawned by a skill), reserved for the decision boundaries
-  listed in the agent file (cross-module blast radius, unclear root cause after real investigation,
-  failed attempts, contract/security/consistency risk, final sign-off on high-risk change).
+- **Advisor — Claude Fable 5, via `.claude/agents/engineering-advisor.md`.** A **separate, scarce
+  advisory role** (not simply a "stronger Opus"): read-only (`Read, Grep, Glob` only — no edits,
+  no commands), manually invoked by the executor, never auto-spawned. The distinction is *role*, not
+  just tier — Opus reviews automatically; Fable advises manually at genuine decision boundaries.
+  Eligible only after Opus when at least one hard condition is met (see `engineering-advisor.md`):
+  Opus leaves ≥2 viable approaches open, two distinct attempts have failed, the decision has high
+  rollback cost, or a final recommendation is needed for genuinely high-risk work.
 
-The key distinction from the existing `opus` escalation: `opus` (`deep-reviewer`) fires
-automatically whenever a review lens or diff size crosses a threshold — that's routine, high-volume
-escalation. `engineering-advisor` (Fable) fires only when the *executor* judges a genuine decision
-boundary has been reached, per the criteria in its own file. If both would apply to the same
-change, prefer running `deep-reviewer` first (cheaper, already wired into `code-review`); reach for
-`engineering-advisor` only if the opus-level findings leave the decision genuinely open.
+The key distinction from `opus` escalation: `opus` (`deep-reviewer`) fires automatically whenever
+a review lens or diff size crosses a threshold — routine, high-volume escalation. `engineering-advisor`
+fires only when the executor reaches a genuine decision boundary per the 4-condition gate in its own
+file. **Cross-repo, auth, contract, or concurrency scope alone qualifies for Opus — not Fable.**
+Always prefer `deep-reviewer` first; reach for `engineering-advisor` only if Opus findings leave the
+decision genuinely open or rollback cost is too high to risk being wrong.
 
 ## When to invoke vs. not (examples)
 

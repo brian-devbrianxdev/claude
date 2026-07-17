@@ -13,7 +13,7 @@ and deterministic guards. Runtime state and local secrets are git-ignored.
 | `rules/` | Workspace rules (layering, JDK matrix, two DBs, contract sync, the Java gate, **model routing** — `docs/rules/model-routing.md`) |
 | `profiles/quapp/` | Project identity (tracker key, GitLab host, branch model) |
 | `hooks/` | `quapp-guard.sh` — accidental-destruction guardrail (blocks destructive git commands and symlink edits; not a security sandbox — bypassable via absolute paths or shell wrappers) · `java-gate.sh` — Java coding-standards reminder |
-| `settings.json` | Shared hooks + theme (machine-local perms live in the git-ignored `settings.local.json`) |
+| `settings.json` | Shared hooks, model pin, and theme. `permissions.defaultMode` is intentionally absent — set it in the git-ignored `settings.local.json` to match your trust level (e.g. `{"permissions":{"defaultMode":"auto"}}`) |
 | `_archived-skills/` | Retired skills kept for provenance (out of discovery) |
 
 ## Skill architecture

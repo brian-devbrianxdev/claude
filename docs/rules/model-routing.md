@@ -23,10 +23,12 @@ orchestrator-level reasoning. In this repo the session default is pinned to `son
 
 Three **named agents** (`../agents/`) carry the recurring routed roles so their model is pinned in
 one place: **`deep-reviewer`** (opus — concurrency/architecture/security lenses, large cross-repo
-diffs; auto-spawned by `code-review`/`security-review`), **`drafter`** (haiku — changelog drafting,
-bulk summaries, checklist verification), and **`engineering-advisor`** (fable — read-only,
+diffs; the `code-review`/`security-review` skills instruct the executor to spawn one when a trigger
+fires — not auto-enforced by a hook), **`drafter`** (haiku — changelog drafting, bulk summaries,
+checklist verification), and **`engineering-advisor`** (opus by default — read-only,
 `Read`/`Grep`/`Glob` only; invoked manually by the executor at a genuine decision boundary, never
-automatically). Prefer them over ad-hoc `Agent(model: …)` calls for those roles.
+automatically; optionally `fable` if the alias is available — see `engineering-advisor.md`). Prefer
+them over ad-hoc `Agent(model: …)` calls for those roles.
 
 ## Skill / command routing table
 

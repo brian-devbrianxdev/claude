@@ -1,7 +1,7 @@
 # Executor + Advisor model architecture (this repo only)
 
 Scope: this document describes a routing architecture layered on top of the existing tier system
-in [`docs/rules/model-routing.md`](docs/rules/model-routing.md), which remains the **single source
+in [`docs/rules/model-routing.md`](../rules/model-routing.md), which remains the **single source
 of truth for the skill/command → model tier table** (its own rule 1: "don't restate this table
 elsewhere"). This file does not repeat that table — it explains the Executor/Advisor split, when
 the new `engineering-advisor` agent should fire, and how to verify/roll it back. It applies only to
@@ -14,10 +14,11 @@ other project.
   `"model": "sonnet"`). Handles everything in the existing `sonnet` tier: exploration, reads,
   routine implementation, mechanical refactors, tests, docs, running build/lint/test, ordinary
   debugging. This is unchanged from today.
-- **Deep reviewer — Claude Opus (`opus` tier, unchanged).** Still auto-spawned by `code-review` /
-  `security-review` for the concurrency / architecture / security lenses and large cross-repo
-  diffs, exactly as `docs/rules/model-routing.md` already specifies. Nothing about this path
-  changes — it stays automatic and stays at `opus`.
+- **Deep reviewer — Claude Opus (`opus` tier, unchanged).** Spawned by the `code-review` /
+  `security-review` skills when a trigger fires (the skills instruct the executor — not automatically
+  enforced by a hook or workflow engine) for the concurrency / architecture / security lenses and
+  large cross-repo diffs, exactly as `docs/rules/model-routing.md` already specifies. Nothing about
+  this path changes — it stays at `opus`.
 - **Advisor — Claude Opus (default), via `.claude/agents/engineering-advisor.md`.** A **separate, scarce
   advisory role** (not simply a "stronger Opus reviewer"): read-only (`Read, Grep, Glob` only — no edits,
   no commands), manually invoked by the executor, never auto-spawned. The distinction is *role*, not
@@ -42,10 +43,10 @@ decision genuinely open or rollback cost is too high to risk being wrong.
 | "Where is the session-timeout logic?" | Executor (Sonnet) — file discovery |
 | Fix a null-pointer in a controller with an obvious cause | Executor (Sonnet) |
 | Standard CRUD endpoint following existing patterns | Executor (Sonnet) |
-| Concurrency/architecture/security lens on a routine diff | `deep-reviewer` (Opus), auto-spawned by `code-review`/`security-review` |
-| Two different fixes attempted for a flaky auth bug, still failing | `engineering-advisor` (Fable) |
-| Changing a DTO/event contract shared across `functions-backend` ↔ `ai-mcp` ↔ frontend | `deep-reviewer` (Opus) first; escalate to `engineering-advisor` (Fable) only if trade-offs remain unresolved or rollback cost justifies a final Go/No-Go |
-| About to do an irreversible broad refactor before commit | `engineering-advisor` (Fable), final review |
+| Concurrency/architecture/security lens on a routine diff | `deep-reviewer` (Opus), spawned by the skill instruction in `code-review`/`security-review` |
+| Two different fixes attempted for a flaky auth bug, still failing | `engineering-advisor` (Opus) |
+| Changing a DTO/event contract shared across `functions-backend` ↔ `ai-mcp` ↔ frontend | `deep-reviewer` (Opus) first; escalate to `engineering-advisor` (Opus) only if trade-offs remain unresolved or rollback cost justifies a final Go/No-Go |
+| About to do an irreversible broad refactor before commit | `engineering-advisor` (Opus), final review |
 | Re-running a test suite after a trivial edit | Executor (Sonnet) |
 
 ## Invocation discipline

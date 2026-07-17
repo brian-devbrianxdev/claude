@@ -76,31 +76,45 @@ case "$tool" in
     # don't produce false positives. Collapse newlines before sed so multi-line -m "..." bodies
     # are treated as one token and fully removed by the [^"]* pattern.
     cmd_unquoted="$(printf '%s' "$cmd" | tr '\n' ' ' | sed 's/"[^"]*"//g')"
+    # Normalize git global options (-C <dir>, --git-dir=X, etc.) so they don't bypass subcommand checks.
+    # "git -C /path reset --hard" normalizes to "git reset --hard" for the patterns below.
+    cmd_git_normalized="$(printf '%s' "$cmd_unquoted" \
+      | sed -E 's/git[[:space:]]+((-C[[:space:]]+[^[:space:]]+|--git-dir[^[:space:]]*|--work-tree[^[:space:]]*|--bare|--no-pager|--paginate|-p)[[:space:]]+)*/git /g')"
     # Plain `git push` stays allowed — /ship-task needs it; only history/worktree destroyers deny.
     if printf '%s' "$cmd_unquoted" | grep -Eq '(^|[^[:alnum:]])git[[:space:]]'; then
-      if printf '%s' "$cmd_unquoted" | grep -Eq 'git[[:space:]]+reset[[:space:]]+(-[^ ]+[[:space:]]+)*--hard'; then
+      if printf '%s' "$cmd_git_normalized" | grep -Eq 'git[[:space:]]+reset[[:space:]]+(-[^ ]+[[:space:]]+)*--hard'; then
         emit_deny "git reset --hard discards uncommitted work. If this is truly intended, ask the user to run it themselves (or use git stash first)."
       fi
-      if printf '%s' "$cmd_unquoted" | grep -Eq 'git[[:space:]]+clean[[:space:]]+-[a-zA-Z]*f'; then
+      if printf '%s' "$cmd_git_normalized" | grep -Eq 'git[[:space:]]+clean[[:space:]]+-[a-zA-Z]*f'; then
         emit_deny "git clean -f deletes untracked files irreversibly. Ask the user to run it themselves if intended."
       fi
-      if printf '%s' "$cmd_unquoted" | grep -Eq 'git[[:space:]]+branch[[:space:]]+(-[^ ]+[[:space:]]+)*-D([[:space:]]|$)'; then
+      if printf '%s' "$cmd_git_normalized" | grep -Eq 'git[[:space:]]+branch[[:space:]]+(-[^ ]+[[:space:]]+)*-D([[:space:]]|$)'; then
         emit_deny "git branch -D force-deletes a branch (unmerged work lost). Use -d, or ask the user."
       fi
-      if printf '%s' "$cmd_unquoted" | grep -Eq 'git[[:space:]]+(checkout|restore)[[:space:]]+(--[[:space:]]+)?\.([[:space:]]|$|;)'; then
+      if printf '%s' "$cmd_git_normalized" | grep -Eq 'git[[:space:]]+(checkout|restore)[[:space:]]+(--[[:space:]]+)?\.([[:space:]]|$|;)'; then
         emit_deny "git checkout/restore . wipes ALL uncommitted changes in the worktree. Restore specific files by path instead, or ask the user."
       fi
-      if printf '%s' "$cmd_unquoted" | grep -Eq 'git[[:space:]]+push([[:space:]]|$)' \
-         && printf '%s' "$cmd_unquoted" | grep -Eq '(^|[[:space:]])(--force|-f)([[:space:]]|$)' \
-         && ! printf '%s' "$cmd_unquoted" | grep -q 'force-with-lease'; then
+      if printf '%s' "$cmd_git_normalized" | grep -Eq 'git[[:space:]]+push([[:space:]]|$)' \
+         && printf '%s' "$cmd_git_normalized" | grep -Eq '(^|[[:space:]])(--force|-f)([[:space:]]|$)' \
+         && ! printf '%s' "$cmd_git_normalized" | grep -q 'force-with-lease'; then
         emit_deny "git push --force can destroy remote history. If a force push is genuinely needed, use --force-with-lease and confirm with the user first."
       fi
     fi
 
     # BLOCK: rm -rf on dangerous targets (.git, .env files, /, ., or bare wildcard)
+    # Catches combined short flags (-rf/-fr) and long options (--recursive/--force in any order).
     # Allows rm -rf on build dirs (build/, dist/, node_modules/, .gradle/, etc.).
-    if printf '%s' "$cmd_unquoted" | grep -Eq '(^|[[:space:];|&`(])rm[[:space:]]+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*|rm[[:space:]]+-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*'; then
-      if printf '%s' "$cmd_unquoted" | grep -Eq 'rm[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*(\.git[[:space:]/$]|\.env[[:space:]/$]|/[[:space:]]|^\.?[[:space:]]*$|\*[[:space:]]|[[:space:]]\*)'; then
+    if printf '%s' "$cmd_unquoted" | grep -Eq \
+      '(^|[[:space:];|&`(])rm[[:space:]]+(-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*)' \
+      || printf '%s' "$cmd_unquoted" | grep -Eq \
+      '(^|[[:space:];|&`(])rm[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*(--recursive[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*--force|--force[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*--recursive)'; then
+      # End-of-word anchor uses ($|[[:space:]]) — NOT [$] which is a literal dollar in a char class.
+      # Skip both short (-rf) and long (--recursive) flags before checking the dangerous target.
+      # Dangerous targets: / . ./ .git .env * — each must end at whitespace or end of string.
+      if printf '%s' "$cmd_unquoted" | grep -Eq \
+        'rm[[:space:]]+((-[a-zA-Z]+|--[a-zA-Z][a-zA-Z-]*)[[:space:]]+)*(\/([[:space:]]|$)|\.([[:space:]]|$)|\.\/([[:space:]]|$)|\.git([[:space:]]|$)|\.env([[:space:]]|$)|[*]([[:space:]]|$))' \
+        || { printf '%s' "$cmd_unquoted" | grep -Eq '(^|[[:space:];|&`(])rm[[:space:]]' \
+             && printf '%s' "$cmd" | grep -Eq '"(/|[.]git|[.]env|[.]|[*])"'; }; then
         emit_deny "rm -rf on .git, .env, /, ., or wildcard target is irreversible. Ask the user to run this themselves if truly intended."
       fi
     fi
@@ -149,7 +163,8 @@ case "$tool" in
     fp="$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')"
 
     # BLOCK: writes to .env files (local-only, must never be committed)
-    if printf '%s' "$fp" | grep -Eq '(^|/)\.env(\.[a-zA-Z0-9]+)?$'; then
+    if printf '%s' "$fp" | grep -Eq '(^|/)\.env(\.[a-zA-Z0-9]+)?$' \
+       && ! printf '%s' "$fp" | grep -Eq '\.(example|template|sample)$'; then
       emit_deny ".env files are local-only and must never be committed. Set variables via shell export, AWS Secrets Manager, or workspace env config instead."
     fi
 

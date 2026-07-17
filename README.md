@@ -8,11 +8,11 @@ and deterministic guards. Runtime state and local secrets are git-ignored.
 | Path | What it is |
 |------|-----------|
 | `skills/` | 16 capability-named skills (see `skills/README.md`) |
-| `commands/` | Lifecycle commands: `/start-task`, `/ship-task` (both pinned to sonnet) |
+| `commands/` | Lifecycle and review commands: `/start-task`, `/ship-task`, `/review-mr`, `/handoff` (all pinned to sonnet) |
 | `agents/` | Model-pinned subagents: `deep-reviewer` (opus), `drafter` (haiku), `engineering-advisor` (fable, scarce/manual-only) — see `docs/rules/model-routing.md` and `MODEL_ROUTING.md` |
 | `rules/` | Workspace rules (layering, JDK matrix, two DBs, contract sync, the Java gate, **model routing** — `docs/rules/model-routing.md`) |
 | `profiles/quapp/` | Project identity (tracker key, GitLab host, branch model) |
-| `hooks/` | `quapp-guard.sh` — deterministic workspace guard |
+| `hooks/` | `quapp-guard.sh` — accidental-destruction guardrail (blocks destructive git commands and symlink edits; not a security sandbox — bypassable via absolute paths or shell wrappers) · `java-gate.sh` — Java coding-standards reminder |
 | `settings.json` | Shared hooks + theme (machine-local perms live in the git-ignored `settings.local.json`) |
 | `_archived-skills/` | Retired skills kept for provenance (out of discovery) |
 
@@ -22,8 +22,11 @@ and history. Skills are named by capability; all project specifics live in `prof
 
 ## Installation
 
-Clone or symlink this repository as `<workspace-root>/.claude` — Claude Code
+Clone or symlink this repository to `<workspace-root>/.claude` — Claude Code
 loads it as the project-level configuration when you open the workspace.
+Do not install it as `~/.claude`; the hook paths in `settings.json` are
+anchored to `$CLAUDE_PROJECT_DIR/.claude/…` and will not resolve correctly
+from a user-level install.
 
 **Required:**
 - Claude Code (latest)
@@ -43,8 +46,8 @@ loads it as the project-level configuration when you open the workspace.
 confirm the guard output appears. If silent, check `settings.json` hook paths and
 that `jq` is installed.
 
-**macOS only:** `session-start.sh` now uses a portable `stat` wrapper; both macOS
-(`stat -f %m`) and Linux (`stat -c %Y`) are supported.
+**Platform support:** macOS and Linux are both supported. `session-start.sh`
+uses a portable `stat` wrapper (BSD `stat -f %m` with GNU `stat -c %Y` fallback).
 
 ## Not tracked
 `settings.local.json`, `sessions/`, `projects/`, `history.jsonl`, `cache/`, `backups/`, `plugins/`,

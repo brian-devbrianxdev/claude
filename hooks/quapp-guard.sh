@@ -34,6 +34,10 @@ if ! command -v jq >/dev/null 2>&1; then
       printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"quapp-guard: git push --force blocked (degraded mode — install jq for full guard)."}}'
       exit 0
     fi
+    if printf '%s' "$raw" | grep -Eq '"command"[^}]*(git checkout \.|git restore \.)'; then
+      printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"quapp-guard: git checkout/restore . blocked (degraded mode — install jq for full guard)."}}'
+      exit 0
+    fi
   fi
   # Block edits to JupyterLab symlinks
   if printf '%s' "$raw" | grep -q 'quapp-jupyterlab-ai-assistant-ext' && printf '%s' "$raw" | grep -Eq '"(CLAUDE|GEMINI)\.md"'; then
@@ -65,8 +69,9 @@ case "$tool" in
 
     # BLOCK: destructive git commands (adapted from mattpocock/skills git-guardrails, MIT).
     # Strip double-quoted strings first so commit message bodies (e.g. -m "... git reset --hard ...")
-    # don't produce false positives.
-    cmd_unquoted="$(printf '%s' "$cmd" | sed 's/"[^"]*"//g')"
+    # don't produce false positives. Collapse newlines before sed so multi-line -m "..." bodies
+    # are treated as one token and fully removed by the [^"]* pattern.
+    cmd_unquoted="$(printf '%s' "$cmd" | tr '\n' ' ' | sed 's/"[^"]*"//g')"
     # Plain `git push` stays allowed — /ship-task needs it; only history/worktree destroyers deny.
     if printf '%s' "$cmd_unquoted" | grep -Eq '(^|[^[:alnum:]])git[[:space:]]'; then
       if printf '%s' "$cmd_unquoted" | grep -Eq 'git[[:space:]]+reset[[:space:]]+(-[^ ]+[[:space:]]+)*--hard'; then

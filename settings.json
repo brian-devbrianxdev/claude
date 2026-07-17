@@ -33,7 +33,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r --arg msg 'Java gate applies (.claude/rules/java.md): no comments, tests mandatory, review gate before commit.' 'if (.tool_input.file_path // \"\" | endswith(\".java\")) then {hookSpecificOutput:{hookEventName:\"PreToolUse\",additionalContext:$msg}} else empty end' 2>/dev/null || true",
+            "command": "HOOK_EVENT_NAME=PreToolUse bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/java-gate.sh\"",
             "statusMessage": "Checking Java coding standards..."
           },
           {
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r --arg msg 'Before committing .java changes: run affected tests + code-review gate (.claude/rules/java.md).' 'if ((.tool_input.file_path // .tool_response.filePath // \"\") | endswith(\".java\")) then {hookSpecificOutput:{hookEventName:\"PostToolUse\",additionalContext:$msg}} else empty end' 2>/dev/null || true",
+            "command": "HOOK_EVENT_NAME=PostToolUse bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/java-gate.sh\"",
             "statusMessage": "Java post-edit gate reminder..."
           }
         ]

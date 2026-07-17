@@ -40,7 +40,7 @@ change, prefer running `deep-reviewer` first (cheaper, already wired into `code-
 | Standard CRUD endpoint following existing patterns | Executor (Sonnet) |
 | Concurrency/architecture/security lens on a routine diff | `deep-reviewer` (Opus), auto-spawned by `code-review`/`security-review` |
 | Two different fixes attempted for a flaky auth bug, still failing | `engineering-advisor` (Fable) |
-| Changing a DTO/event contract shared across `functions-backend` ↔ `ai-mcp` ↔ frontend | `engineering-advisor` (Fable) — cross-repo, no codegen sync |
+| Changing a DTO/event contract shared across `functions-backend` ↔ `ai-mcp` ↔ frontend | `deep-reviewer` (Opus) first; escalate to `engineering-advisor` (Fable) only if trade-offs remain unresolved or rollback cost justifies a final Go/No-Go |
 | About to do an irreversible broad refactor before commit | `engineering-advisor` (Fable), final review |
 | Re-running a test suite after a trivial edit | Executor (Sonnet) |
 

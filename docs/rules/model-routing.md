@@ -14,15 +14,19 @@ phase boundary — don't nag mid-task.
 | **sonnet** | `sonnet` | Normal engineering: implementation, features, refactoring, tests, docs, CRUD/API work, routine diff review, evidence-gathering subagents |
 | **opus** | `opus` | Deep reasoning: hard debugging/root-cause, architecture decisions, large refactors, security review, performance analysis, concurrency review, ambiguous requirements, cross-repo/cross-module changes |
 | **highest available** (session default — Fable/Opus, whatever the user runs) | *(omit `model` — inherit)* | Orchestration only: planning and decomposing large work, coordinating multiple agents, synthesizing several workers' results, Go/No-Go verdicts |
+| **advisor** (scarce, above opus) | `fable` | Manual-only: architecture decisions, root cause still unclear after real investigation, failed fix attempts, cross-repo/contract/security/consistency risk, final sign-off on a high-risk change. Never auto-spawned by a skill — see [`../../MODEL_ROUTING.md`](../../MODEL_ROUTING.md) for the full Executor+Advisor architecture and invocation discipline |
 
 Rule of thumb: **workers get an explicit cheap tier; the orchestrator inherits the session model.**
 Omitting `model` on a subagent = inherit — only omit when the subagent genuinely needs
-orchestrator-level reasoning.
+orchestrator-level reasoning. In this repo the session default is pinned to `sonnet`
+(`.claude/settings.json`) — the executor tier above is that pinned default, not an ad-hoc choice.
 
-Two **named agents** (`../agents/`) carry the recurring routed roles so their model is pinned in one
-place: **`deep-reviewer`** (opus — concurrency/architecture/security lenses, large cross-repo diffs)
-and **`drafter`** (haiku — changelog drafting, bulk summaries, checklist verification). Prefer them
-over ad-hoc `Agent(model: …)` calls for those roles.
+Three **named agents** (`../agents/`) carry the recurring routed roles so their model is pinned in
+one place: **`deep-reviewer`** (opus — concurrency/architecture/security lenses, large cross-repo
+diffs; auto-spawned by `code-review`/`security-review`), **`drafter`** (haiku — changelog drafting,
+bulk summaries, checklist verification), and **`engineering-advisor`** (fable — read-only,
+`Read`/`Grep`/`Glob` only; invoked manually by the executor at a genuine decision boundary, never
+automatically). Prefer them over ad-hoc `Agent(model: …)` calls for those roles.
 
 ## Skill / command routing table
 

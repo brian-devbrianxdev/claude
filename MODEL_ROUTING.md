@@ -1,0 +1,87 @@
+# Executor + Advisor model architecture (this repo only)
+
+Scope: this document describes a routing architecture layered on top of the existing tier system
+in [`docs/rules/model-routing.md`](docs/rules/model-routing.md), which remains the **single source
+of truth for the skill/command → model tier table** (its own rule 1: "don't restate this table
+elsewhere"). This file does not repeat that table — it explains the Executor/Advisor split, when
+the new `engineering-advisor` agent should fire, and how to verify/roll it back. It applies only to
+the `Quapp` workspace's `.claude/` config (repo-scoped `settings.json` + `agents/`), not to any
+other project.
+
+## Architecture
+
+- **Executor — Claude Sonnet 5.** The default model for this repo (`.claude/settings.json` →
+  `"model": "sonnet"`). Handles everything in the existing `sonnet` tier: exploration, reads,
+  routine implementation, mechanical refactors, tests, docs, running build/lint/test, ordinary
+  debugging. This is unchanged from today.
+- **Deep reviewer — Claude Opus (`opus` tier, unchanged).** Still auto-spawned by `code-review` /
+  `security-review` for the concurrency / architecture / security lenses and large cross-repo
+  diffs, exactly as `docs/rules/model-routing.md` already specifies. Nothing about this path
+  changes — it stays automatic and stays at `opus`.
+- **Advisor — Claude Fable 5, via `.claude/agents/engineering-advisor.md`.** A new, scarcer tier
+  *above* `opus`: read-only (`Read, Grep, Glob` only — no edits, no commands), manually invoked by
+  the orchestrating session (never auto-spawned by a skill), reserved for the decision boundaries
+  listed in the agent file (cross-module blast radius, unclear root cause after real investigation,
+  failed attempts, contract/security/consistency risk, final sign-off on high-risk change).
+
+The key distinction from the existing `opus` escalation: `opus` (`deep-reviewer`) fires
+automatically whenever a review lens or diff size crosses a threshold — that's routine, high-volume
+escalation. `engineering-advisor` (Fable) fires only when the *executor* judges a genuine decision
+boundary has been reached, per the criteria in its own file. If both would apply to the same
+change, prefer running `deep-reviewer` first (cheaper, already wired into `code-review`); reach for
+`engineering-advisor` only if the opus-level findings leave the decision genuinely open.
+
+## When to invoke vs. not (examples)
+
+| Situation | Route |
+|---|---|
+| "Where is the session-timeout logic?" | Executor (Sonnet) — file discovery |
+| Fix a null-pointer in a controller with an obvious cause | Executor (Sonnet) |
+| Standard CRUD endpoint following existing patterns | Executor (Sonnet) |
+| Concurrency/architecture/security lens on a routine diff | `deep-reviewer` (Opus), auto-spawned by `code-review`/`security-review` |
+| Two different fixes attempted for a flaky auth bug, still failing | `engineering-advisor` (Fable) |
+| Changing a DTO/event contract shared across `functions-backend` ↔ `ai-mcp` ↔ frontend | `engineering-advisor` (Fable) — cross-repo, no codegen sync |
+| About to do an irreversible broad refactor before commit | `engineering-advisor` (Fable), final review |
+| Re-running a test suite after a trivial edit | Executor (Sonnet) |
+
+## Invocation discipline
+
+The executor must not forward the raw task to the advisor. It first builds the evidence packet
+described in `engineering-advisor.md` (requested outcome, relevant files/symbols, observed vs.
+expected behavior, investigation already done, hypothesis, unresolved decisions, relevant project
+rules) and asks a focused question. Advisor output is guidance, not final authority — the executor
+verifies every claim against the repository before acting on it.
+
+## How to verify which model an agent used
+
+- Check the agent's frontmatter: `.claude/agents/engineering-advisor.md` → `model: fable`;
+  `.claude/agents/deep-reviewer.md` → `model: opus`; `.claude/agents/drafter.md` → `model: haiku`.
+- Check the session default: `.claude/settings.json` → `"model": "sonnet"` (this repo only —
+  `/model` can still override it for the current session).
+- In the transcript/UI, a subagent call shows its resolved model in the task header; if in doubt,
+  ask the agent to state its model or check `/status`.
+
+## Limitations and cost trade-offs
+
+- Fable is the most expensive, highest-latency tier available here — every invocation should be
+  deliberate. If `engineering-advisor` starts firing on routine work, that's a routing bug, not
+  expected behavior — tighten the trigger criteria rather than tolerating it.
+- The advisor is read-only by design; it cannot verify its own recommendation against a live test
+  run. The executor is always responsible for running validation after implementing the advice.
+- This split adds a coordination step (evidence packet → advice → verify → implement) that costs
+  more wall-clock time than letting Sonnet proceed directly. Only worth it at genuine decision
+  boundaries — see "do not invoke" list in `engineering-advisor.md`.
+- Pinning `"model": "sonnet"` in `settings.json` sets the *default* for this repo; it does not
+  prevent an explicit `/model` switch mid-session, nor does it change any other repo's settings.
+
+## Rollback
+
+- To remove the advisor entirely: delete `.claude/agents/engineering-advisor.md`. No other file
+  depends on its presence — `docs/rules/model-routing.md` and `README.md` reference it by name but
+  degrade gracefully (the row/bullet becomes stale text to prune, not a broken reference).
+- To stop pinning Sonnet as the repo default: remove the `"model": "sonnet"` line from
+  `.claude/settings.json`; the session will fall back to whatever `/model` or the global default
+  resolves to.
+- To fully revert this architecture: revert the diffs to `settings.json`,
+  `docs/rules/model-routing.md`, `README.md`, and the root `CLAUDE.md`, and delete this file and
+  `agents/engineering-advisor.md`. Nothing else in `.claude/` was modified.

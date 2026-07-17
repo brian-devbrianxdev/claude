@@ -20,7 +20,6 @@ input="$(cat)"
 # Determine file path from pre or post tool-use payload
 fp="$(printf '%s' "$input" | jq -r '
   .tool_input.file_path //
-  .tool_input.new_string //
   .tool_response.filePath //
   "" ')"
 

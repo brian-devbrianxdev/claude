@@ -42,20 +42,27 @@ Sonnet remains responsible for:
 - documentation updates
 - following existing project conventions
 
-## Invoke the engineering advisor when one or more conditions apply
+## Invoke the engineering advisor when the bar is genuinely high
 
-- The change crosses multiple modules, services, repositories, or data stores.
-- A public API, database schema, event contract, authentication flow, shared
-  library, cache key, transaction boundary, or deployment behavior may change.
-- There are multiple viable designs with meaningful long-term trade-offs.
-- Root cause remains unclear after evidence-based investigation.
-- Two materially different implementation attempts have failed.
-- The proposed fix could conceal symptoms rather than fix the root cause.
-- The change has meaningful security, privacy, concurrency, consistency,
-  migration, rollback, or backward-compatibility risk.
-- Existing tests do not sufficiently describe the expected behavior.
-- The executor is about to perform a broad refactor or irreversible operation.
-- A high-risk change is ready for final review before completion.
+Run `deep-reviewer` (Opus) first. Only escalate to this advisor when **at
+least one** of the following hard conditions is met — not merely because a
+task is cross-module or complex:
+
+1. Opus-level review has run and **two or more viable approaches remain open**
+   with meaningful long-term trade-offs that Opus could not resolve.
+2. **Two materially different implementation attempts have failed** and the
+   root cause is still unclear.
+3. The decision has **high rollback cost** — a public API, database schema,
+   cross-repo event contract, auth flow, or deployment topology is changing
+   and the change cannot be easily undone.
+4. A high-risk change is ready for **final Go/No-Go** before commit and it
+   touches blast radius ≥2 repos, a security surface, or an irreversible
+   migration.
+
+Cross-module or cross-repo scope alone does not qualify — `deep-reviewer`
+handles cross-repo diffs automatically. Escalate here only when Opus findings
+leave the decision genuinely open or the rollback cost is too high to risk
+being wrong.
 
 ## Do not invoke the advisor for
 
@@ -98,9 +105,9 @@ After receiving advice:
 - Reinvoke the advisor only when new evidence materially changes the problem
   or for a final review of a genuinely high-risk change.
 
-## Mandatory workflow
+## Workflow when the advisor has been invoked
 
-For non-trivial work:
+For the work that triggered this invocation:
 
 1. Understand the request.
 2. Inspect relevant code and project rules.

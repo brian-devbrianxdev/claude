@@ -9,7 +9,10 @@
 set -u
 
 [ "${QUAPP_SESSION_CHECK:-on}" = "off" ] && exit 0
-command -v jq >/dev/null 2>&1 || exit 0
+if ! command -v jq >/dev/null 2>&1; then
+  echo "Quapp session snapshot skipped: jq is not installed." >&2
+  exit 0
+fi
 
 root="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 [ -d "$root" ] || exit 0
@@ -49,7 +52,7 @@ for rel in $REPOS; do
 
   if [ -d "$dir/.gitnexus" ]; then
     head_ts="$(git -C "$dir" log -1 --format=%ct 2>/dev/null)"
-    idx_ts="$(find "$dir/.gitnexus" -type f -exec stat -f %m {} + 2>/dev/null | sort -rn | head -1)"
+    idx_ts="$(find "$dir/.gitnexus" -type f -exec sh -c 'stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null' _ {} \; 2>/dev/null | sort -rn | head -1)"
     if [ -n "$head_ts" ] && [ -n "$idx_ts" ] && [ "$idx_ts" -lt "$head_ts" ]; then
       append_warn "$name GitNexus index looks older than HEAD — reanalyze before trusting graph queries."
     fi

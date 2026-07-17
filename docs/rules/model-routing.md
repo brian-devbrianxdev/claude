@@ -39,7 +39,7 @@ automatically). Prefer them over ad-hoc `Agent(model: …)` calls for those role
 | `change-implementation` | sonnet | Escalate to opus only if the plan spans ≥2 repos or changes auth/contracts |
 | `bug-investigation` | **opus** | Root-cause analysis |
 | `code-review` — correctness / standards / project-rules / api-contract lenses | sonnet | Routine diff review |
-| `code-review` — concurrency / architecture lens, or diff spanning ≥2 repos or >10 files | **opus** | Run that lens in an opus subagent (see the skill's escalation section) |
+| `code-review` — concurrency / architecture lens, or diff spanning ≥2 repos or >10 meaningfully changed files (excluding generated files, lockfiles, snapshots, formatting-only) | **opus** | Run that lens in an opus subagent (see the skill's escalation section) |
 | `security-review` | **opus** | Never downgrade security |
 | `completion-audit` — per-ticket audit workers | sonnet | Evidence mapping, structured output |
 | `completion-audit` — cross-ticket conflict synthesis | **opus** | Cross-module contract reasoning |

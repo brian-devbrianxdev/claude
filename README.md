@@ -20,6 +20,32 @@ and deterministic guards. Runtime state and local secrets are git-ignored.
 Consolidated from 29 skills to **16** across two passes + post-pass additions — see `skills/README.md` for the full map
 and history. Skills are named by capability; all project specifics live in `profiles/` and `rules/`.
 
+## Installation
+
+Clone or symlink this repository as `<workspace-root>/.claude` — Claude Code
+loads it as the project-level configuration when you open the workspace.
+
+**Required:**
+- Claude Code (latest)
+- `jq` — used by all hooks; guards degrade without it (`brew install jq`)
+- `git` — version control
+- `glab` — GitLab CLI, authenticated to `gitlab.citynow.vn` (`brew install glab`)
+- Java 17 and Java 21 — JDK matrix varies per repo (see `rules/workspace.md`)
+
+**Optional:**
+- Docker — needed for Testcontainers-based integration tests (`quapp-ai-mcp`)
+- GitNexus MCP — enables graph-based code navigation (all 6 repos indexed)
+- Atlassian MCP — enables Jira/Confluence integration (`/start-task`, `release-note`)
+- `fable` model alias — required by `engineering-advisor`; falls back to `opus`
+  if unavailable (see `MODEL_ROUTING.md`)
+
+**Verify hooks are running:** open any repo in the workspace, run a command, and
+confirm the guard output appears. If silent, check `settings.json` hook paths and
+that `jq` is installed.
+
+**macOS only:** `session-start.sh` now uses a portable `stat` wrapper; both macOS
+(`stat -f %m`) and Linux (`stat -c %Y`) are supported.
+
 ## Not tracked
 `settings.local.json`, `sessions/`, `projects/`, `history.jsonl`, `cache/`, `backups/`, `plugins/`,
 and other per-machine runtime state (see `.gitignore`).

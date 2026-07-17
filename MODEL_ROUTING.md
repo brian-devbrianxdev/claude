@@ -74,6 +74,24 @@ verifies every claim against the repository before acting on it.
 - Pinning `"model": "sonnet"` in `settings.json` sets the *default* for this repo; it does not
   prevent an explicit `/model` switch mid-session, nor does it change any other repo's settings.
 
+## Environment prerequisite for Fable
+
+`model: fable` in `engineering-advisor.md` requires the `fable` model alias
+to be available in the current Claude Code environment. Verify before first use:
+
+```
+/model
+```
+
+or check that `fable` appears in the model list. If `fable` is not available:
+- Use `opus` as a direct fallback — the advisor's read-only contract (`Read`,
+  `Grep`, `Glob` only) and response structure remain identical.
+- Swap the frontmatter: `model: fable` → `model: opus` in
+  `agents/engineering-advisor.md`, or pass `model: "opus"` explicitly in the
+  `Agent` tool call.
+- The quality difference for this specific read-only advisory role is small;
+  the routing criteria and discipline are more important than the model tier.
+
 ## Rollback
 
 - To remove the advisor entirely: delete `.claude/agents/engineering-advisor.md`. No other file

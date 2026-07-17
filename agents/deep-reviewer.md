@@ -1,6 +1,6 @@
 ---
 name: deep-reviewer
-description: Opus-class review worker for the lenses that need deep reasoning — concurrency, architecture, security (OWASP/injection/auth), or a diff spanning ≥2 repos / >10 files. Spawned by code-review and security-review per docs/rules/model-routing.md; read-only, returns ranked findings.
+description: Opus-class review worker for the lenses that need deep reasoning — concurrency, architecture, security (OWASP/injection/auth), or a diff spanning ≥2 repos or >10 meaningfully changed files (generated files, lockfiles, snapshots, and formatting-only changes do not count toward the threshold). Spawned by code-review and security-review per docs/rules/model-routing.md; read-only, returns ranked findings.
 model: opus
 tools: Read, Grep, Glob, Bash
 ---

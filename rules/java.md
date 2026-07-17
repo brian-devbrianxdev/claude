@@ -6,13 +6,10 @@
 `security-review`, and the deterministic reminders live in `hooks/quapp-guard.sh` +
 `settings.json`. Apply this whenever you write or modify `.java` code.
 
-## Phase 0 — Branch setup (always first)
-Per [`../profiles/quapp/profile.md`](../profiles/quapp/profile.md) and `git-workflow.md`:
-1. `git branch --show-current`.
-2. If not on the intended base, `git checkout <base>` + `git pull` (base = `staging` or latest
-   `production`, **confirmed per ticket — never default to `develop`**).
-3. Branch: `feature|bugfix/khactuong.ngohoang/PQF-<key>-<short-desc>`.
-4. Never implement on a base/env branch. (`/start-task` automates this.)
+## Phase 0 — Branch prerequisite
+Before modifying any Java, confirm you are on a permitted working branch per
+[`git-workflow.md`](git-workflow.md). Branch creation and base selection are owned by
+`/start-task` and are not repeated here.
 
 ## Phase 1 — Design (pick what applies)
 | Change involves… | Read |
@@ -39,10 +36,21 @@ its place (YAGNI).
 - Strict layering: **JPA entities never leave the repository layer** (`workspace.md`).
 - Structured, MDC-aware logging (spring-stack-patterns, logging section).
 
-## Phase 3 — Tests (mandatory)
-Every change ships with tests ([test-authoring](../skills/test-authoring/SKILL.md)):
-- Feature → unit + integration covering the acceptance criteria.
-- Bug fix → a **regression test** that fails before the fix and passes after.
+## Phase 3 — Tests (risk-based, mandatory)
+Every change requires validation. The required level depends on what changed
+([test-authoring](../skills/test-authoring/SKILL.md)):
+
+| Change type | Required tests |
+|-------------|---------------|
+| Domain or calculation logic | Unit tests |
+| Repository, query, transaction, integration boundary | Integration tests |
+| REST or event contract | Controller / contract integration tests |
+| Bug fix | Regression test at the lowest reliable layer that fails before the fix |
+| Config or build-only change | Targeted build or smoke verification |
+
+Not every change needs both unit and integration tests. A DTO rename or log
+enrichment does not justify a new integration test; a transaction boundary
+change does not get away with only a unit test.
 
 ## Phase 4 — Self-review gate (before commit)
 Run as a checklist on the diff:

@@ -142,10 +142,13 @@ case "$tool" in
       emit_deny "In the JupyterLab ext, CLAUDE.md and GEMINI.md are symlinks to AGENTS.md. Edit AGENTS.md instead."
     fi
 
-    # ADVISORY: high-confidence hardcoded secret in new content
-    content="$(printf '%s' "$input" | jq -r '.tool_input.content // .tool_input.new_string // ""')"
-    if printf '%s' "$content" | grep -Eq '(AKIA[0-9A-Z]{16}|ghp_[0-9A-Za-z]{20,}|sk_live_[0-9A-Za-z]+|-----BEGIN [A-Z ]*PRIVATE KEY-----)'; then
-      emit_context "This change looks like it contains a hardcoded secret. Quapp secrets come from AWS Secrets Manager / env — never commit keys."
+    # BLOCK: high-confidence hardcoded secret in new content.
+    # Override with QUAPP_SECRET_GUARD=off if you intentionally write test fixtures with fake-key patterns.
+    if [ "${QUAPP_SECRET_GUARD:-on}" = "on" ]; then
+      content="$(printf '%s' "$input" | jq -r '.tool_input.content // .tool_input.new_string // ""')"
+      if printf '%s' "$content" | grep -Eq '(AKIA[0-9A-Z]{16}|ghp_[0-9A-Za-z]{20,}|sk_live_[0-9A-Za-z]+|-----BEGIN [A-Z ]*PRIVATE KEY-----)'; then
+        emit_deny "This change contains a pattern that looks like a hardcoded secret (AWS key, GitHub token, Stripe live key, or private key). Quapp secrets come from AWS Secrets Manager / env — never commit keys. Set QUAPP_SECRET_GUARD=off to override for intentional test fixtures."
+      fi
     fi
     ;;
 esac

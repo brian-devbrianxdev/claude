@@ -22,11 +22,13 @@ and history. Skills are named by capability; all project specifics live in `prof
 
 ## Installation
 
-Clone or symlink this repository to `<workspace-root>/.claude` — Claude Code
-loads it as the project-level configuration when you open the workspace.
-Do not install it as `~/.claude`; the hook paths in `settings.json` are
-anchored to `$CLAUDE_PROJECT_DIR/.claude/…` and will not resolve correctly
-from a user-level install.
+This repository must be checked out as the `.claude` directory **at the root
+of your workspace** — for example `~/projects/quapp/.claude`. Claude Code
+loads it as project-level configuration when the workspace root is opened.
+
+Do not install it as `~/.claude`. Hook paths in `settings.json` are anchored
+to `$CLAUDE_PROJECT_DIR/.claude/` and will not resolve correctly from a
+user-level install.
 
 **Required:**
 - Claude Code (latest)
@@ -39,8 +41,8 @@ from a user-level install.
 - Docker — needed for Testcontainers-based integration tests (`quapp-ai-mcp`)
 - GitNexus MCP — enables graph-based code navigation (all 6 repos indexed)
 - Atlassian MCP — enables Jira/Confluence integration (`/start-task`, `release-note`)
-- `fable` model alias — required by `engineering-advisor`; falls back to `opus`
-  if unavailable (see `MODEL_ROUTING.md`)
+- `fable` model alias — optional; if unavailable, manually invoke the advisor
+  with `opus` or change its frontmatter as documented in `MODEL_ROUTING.md`
 
 **Verify hooks are running:** open any repo in the workspace, run a command, and
 confirm the guard output appears. If silent, check `settings.json` hook paths and
@@ -52,3 +54,7 @@ uses a portable `stat` wrapper (BSD `stat -f %m` with GNU `stat -c %Y` fallback)
 ## Not tracked
 `settings.local.json`, `sessions/`, `projects/`, `history.jsonl`, `cache/`, `backups/`, `plugins/`,
 and other per-machine runtime state (see `.gitignore`).
+
+`policy-limits.json` is also git-ignored — it holds machine-local Claude Code policy restrictions
+(remote-control, web-setup, search isolation). Create it from scratch if needed; there is no
+template because its contents are security-sensitive and environment-specific.

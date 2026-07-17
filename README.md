@@ -7,7 +7,7 @@ and deterministic guards. Runtime state and local secrets are git-ignored.
 ## Layout
 | Path | What it is |
 |------|-----------|
-| `skills/` | 13 capability-named skills (see `skills/README.md`) |
+| `skills/` | 16 capability-named skills (see `skills/README.md`) |
 | `commands/` | Lifecycle commands: `/start-task`, `/ship-task` (both pinned to sonnet) |
 | `agents/` | Model-pinned subagents: `deep-reviewer` (opus), `drafter` (haiku), `engineering-advisor` (fable, scarce/manual-only) — see `docs/rules/model-routing.md` and `MODEL_ROUTING.md` |
 | `rules/` | Workspace rules (layering, JDK matrix, two DBs, contract sync, the Java gate, **model routing** — `docs/rules/model-routing.md`) |
@@ -17,7 +17,7 @@ and deterministic guards. Runtime state and local secrets are git-ignored.
 | `_archived-skills/` | Retired skills kept for provenance (out of discovery) |
 
 ## Skill architecture
-Consolidated from 29 skills to **13** across two passes — see `skills/README.md` for the full map
+Consolidated from 29 skills to **16** across two passes + post-pass additions — see `skills/README.md` for the full map
 and history. Skills are named by capability; all project specifics live in `profiles/` and `rules/`.
 
 ## Not tracked

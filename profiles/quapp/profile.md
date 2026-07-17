@@ -1,14 +1,9 @@
 # Project Profile — Quapp
 
 The **single source of project identity**. Capability skills (task-scoping, change-implementation,
-diff-review, release-audit, the task lifecycle) and the `/start-task` / `/ship-task` commands read
+solution-planning, the task lifecycle commands) and the `/start-task` / `/ship-task` commands read
 these values instead of hardcoding them. Swapping this file + the rules below retargets the whole
 skill set at a different project.
-
-> Status: this profile is the first step of decoupling project specifics from skill names. Until the
-> structural rename pass lands, the active skills are still named `quapp-*` and the values below are
-> also referenced inline in those skills and in `hooks/quapp-guard.sh`. Treat this file as the
-> authority; reconcile inline copies into it during the rename.
 
 ## Identity
 | Key | Value |
@@ -30,10 +25,10 @@ skill set at a different project.
 ## Workspace facts (authority = rules/, not this file)
 - **Not a monorepo** — six independent repos under one VS Code workspace. One repo at a time.
 - Repo → JDK matrix, the two databases, cross-repo HTTP contracts (no codegen), and per-repo
-  build/test commands are owned by [rules/](rules/) — see `workspace.md`, `migration.md`,
+  build/test commands are owned by [../../rules/](../../rules/) — see `workspace.md`, `migration.md`,
   `testing.md`, and the per-repo files. This profile does not duplicate them.
 
 ## Pointers
-- Coding/layering/contract rules: [rules/](rules/)
+- Coding/layering/contract rules: [../../rules/](../../rules/)
 - Deterministic guards (yarn-not-npm, JDK match, edit-AGENTS-not-symlink, no-secrets):
   `hooks/quapp-guard.sh`

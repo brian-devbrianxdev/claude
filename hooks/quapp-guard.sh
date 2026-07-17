@@ -12,7 +12,36 @@
 set -u
 
 [ "${QUAPP_GUARD:-on}" = "off" ] && exit 0
-command -v jq >/dev/null 2>&1 || exit 0
+
+if ! command -v jq >/dev/null 2>&1; then
+  # Degraded mode: no jq available — use crude grep to still block the worst cases.
+  raw="$(cat)"
+  # Block destructive git commands
+  if printf '%s' "$raw" | grep -q '"command"'; then
+    if printf '%s' "$raw" | grep -Eq '"command"[^}]*git reset --hard'; then
+      printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"quapp-guard: git reset --hard blocked (degraded mode — install jq for full guard)."}}'
+      exit 0
+    fi
+    if printf '%s' "$raw" | grep -Eq '"command"[^}]*git clean -[a-zA-Z]*f'; then
+      printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"quapp-guard: git clean -f blocked (degraded mode — install jq for full guard)."}}'
+      exit 0
+    fi
+    if printf '%s' "$raw" | grep -Eq '"command"[^}]*git branch -D'; then
+      printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"quapp-guard: git branch -D blocked (degraded mode — install jq for full guard)."}}'
+      exit 0
+    fi
+    if printf '%s' "$raw" | grep -Eq '"command"[^}]*git push.*--force' && ! printf '%s' "$raw" | grep -q 'force-with-lease'; then
+      printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"quapp-guard: git push --force blocked (degraded mode — install jq for full guard)."}}'
+      exit 0
+    fi
+  fi
+  # Block edits to JupyterLab symlinks
+  if printf '%s' "$raw" | grep -q 'quapp-jupyterlab-ai-assistant-ext' && printf '%s' "$raw" | grep -Eq '"(CLAUDE|GEMINI)\.md"'; then
+    printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"quapp-guard: edit to CLAUDE.md/GEMINI.md symlink blocked (degraded mode — install jq for full guard)."}}'
+    exit 0
+  fi
+  exit 0
+fi
 
 input="$(cat)"
 tool="$(printf '%s' "$input" | jq -r '.tool_name // ""')"
@@ -35,23 +64,26 @@ case "$tool" in
     cwd="$(printf '%s' "$input" | jq -r '.cwd // ""')"
 
     # BLOCK: destructive git commands (adapted from mattpocock/skills git-guardrails, MIT).
+    # Strip double-quoted strings first so commit message bodies (e.g. -m "... git reset --hard ...")
+    # don't produce false positives.
+    cmd_unquoted="$(printf '%s' "$cmd" | sed 's/"[^"]*"//g')"
     # Plain `git push` stays allowed — /ship-task needs it; only history/worktree destroyers deny.
-    if printf '%s' "$cmd" | grep -Eq '(^|[^[:alnum:]])git[[:space:]]'; then
-      if printf '%s' "$cmd" | grep -Eq 'git[[:space:]]+reset[[:space:]]+(-[^ ]+[[:space:]]+)*--hard'; then
+    if printf '%s' "$cmd_unquoted" | grep -Eq '(^|[^[:alnum:]])git[[:space:]]'; then
+      if printf '%s' "$cmd_unquoted" | grep -Eq 'git[[:space:]]+reset[[:space:]]+(-[^ ]+[[:space:]]+)*--hard'; then
         emit_deny "git reset --hard discards uncommitted work. If this is truly intended, ask the user to run it themselves (or use git stash first)."
       fi
-      if printf '%s' "$cmd" | grep -Eq 'git[[:space:]]+clean[[:space:]]+-[a-zA-Z]*f'; then
+      if printf '%s' "$cmd_unquoted" | grep -Eq 'git[[:space:]]+clean[[:space:]]+-[a-zA-Z]*f'; then
         emit_deny "git clean -f deletes untracked files irreversibly. Ask the user to run it themselves if intended."
       fi
-      if printf '%s' "$cmd" | grep -Eq 'git[[:space:]]+branch[[:space:]]+(-[^ ]+[[:space:]]+)*-D([[:space:]]|$)'; then
+      if printf '%s' "$cmd_unquoted" | grep -Eq 'git[[:space:]]+branch[[:space:]]+(-[^ ]+[[:space:]]+)*-D([[:space:]]|$)'; then
         emit_deny "git branch -D force-deletes a branch (unmerged work lost). Use -d, or ask the user."
       fi
-      if printf '%s' "$cmd" | grep -Eq 'git[[:space:]]+(checkout|restore)[[:space:]]+(--[[:space:]]+)?\.([[:space:]]|$|;)'; then
+      if printf '%s' "$cmd_unquoted" | grep -Eq 'git[[:space:]]+(checkout|restore)[[:space:]]+(--[[:space:]]+)?\.([[:space:]]|$|;)'; then
         emit_deny "git checkout/restore . wipes ALL uncommitted changes in the worktree. Restore specific files by path instead, or ask the user."
       fi
-      if printf '%s' "$cmd" | grep -Eq 'git[[:space:]]+push([[:space:]]|$)' \
-         && printf '%s' "$cmd" | grep -Eq '(^|[[:space:]])(--force|-f)([[:space:]]|$)' \
-         && ! printf '%s' "$cmd" | grep -q 'force-with-lease'; then
+      if printf '%s' "$cmd_unquoted" | grep -Eq 'git[[:space:]]+push([[:space:]]|$)' \
+         && printf '%s' "$cmd_unquoted" | grep -Eq '(^|[[:space:]])(--force|-f)([[:space:]]|$)' \
+         && ! printf '%s' "$cmd_unquoted" | grep -q 'force-with-lease'; then
         emit_deny "git push --force can destroy remote history. If a force push is genuinely needed, use --force-with-lease and confirm with the user first."
       fi
     fi

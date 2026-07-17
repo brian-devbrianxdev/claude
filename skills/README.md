@@ -67,7 +67,9 @@ The write-time **Java gate** is now a rule: [`../rules/java.md`](../rules/java.m
   `jira-ticket-audit` + `quapp-release-audit` → `completion-audit`; absorbed `jira-feature` +
   `jira-bugfix` into `/start-task` + `/ship-task`; retired the `java-coding-standards` gate into
   `../rules/java.md`; and renamed every `quapp-*` / tool-named skill to a capability name.
-- Result: **29 skills → 13** + 2 commands, no capability lost (except the rarely-used
+- Result after passes A+B: **29 skills → 13** + 2 commands. Three more skills (`grilling`,
+  `merge-conflict-resolution`, `release-note`) and two more commands (`/review-mr`, `/handoff`)
+  added since → **current: 16 skills, 4 commands**. No capability lost (except the rarely-used
   `java-migration`, archived under `../_archived-skills/`).
 
 ## Adding a new skill

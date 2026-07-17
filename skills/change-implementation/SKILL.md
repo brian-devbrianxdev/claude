@@ -34,7 +34,10 @@ approves the plan (step 5).
 
 ## Rules Claude Must Follow
 - **No source edits before the step 5 approval. Do not invent architecture.**
-- Minimal diff; one repo at a time; match the repo's JDK and conventions.
+- Minimal diff; operate in **one repo at a time**, but a single task may require a coordinated
+  sequence across multiple repos (e.g. backend DTO + frontend consumer + ai-mcp contract). Do not
+  declare the task complete until all required consumers are updated or explicitly recorded as
+  follow-up work. Match each repo's JDK and conventions.
 - Java: keep strict layering; **never expose JPA entities** outside the repository layer (`workspace.md`).
 - Frontend: use **`yarn`**, not npm. JupyterLab ext: edit `AGENTS.md`, not the symlinks; `jlpm build` after TS edits.
 - Keep cross-tier contracts in sync (frontend ↔ backend ↔ ai-mcp) — update every consumer.

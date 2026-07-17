@@ -25,9 +25,16 @@ Match the naming/structure/idioms of surrounding code first; reach for a pattern
 its place (YAGNI).
 
 ## Phase 2 — While writing
-- **No comments.** Write self-explanatory code (intention-revealing names, small methods). The only
-  allowed exceptions: required Javadoc on public APIs, license headers, machine-read annotations
-  (`@Override`, etc.). (Frontend/JupyterLab TS additionally forbid new tests/comments — see those rules.)
+- **No redundant comments.** Write self-explanatory code (intention-revealing names, small methods).
+  Do not add comments that restate what the code does. A comment is allowed only when it explains
+  something that cannot be made clear through naming or decomposition:
+  - a non-obvious business or concurrency invariant
+  - a deliberate workaround with a reference (ticket, vendor bug, spec clause)
+  - a security or compatibility constraint that would surprise a future reader
+  - a regex, SQL, or algorithm whose intent is genuinely non-obvious
+  Required Javadoc on public APIs and license headers are always allowed.
+  Machine-read annotations (`@Override`, etc.) are not comments.
+  (Frontend/JupyterLab TS: same rule — no restating-what-the-code-does comments.)
 - Keep methods small; respect single responsibility and dependency direction (code-craft).
 - Strict layering: **JPA entities never leave the repository layer** (`workspace.md`).
 - Structured, MDC-aware logging (spring-stack-patterns, logging section).

@@ -9,8 +9,13 @@ description: >
   discovery, mechanical edits, standard test execution, formatting, simple
   compilation errors, or ordinary debugging.
 tools: Read, Grep, Glob
-model: fable
+model: opus
 ---
+
+# Model note: pinned to opus for guaranteed availability.
+# If the `fable` alias is confirmed available in your environment, replace
+# `model: opus` with `model: fable` in this file's frontmatter for stronger reasoning.
+# The routing criteria and read-only contract are what matter most, not the exact tier.
 
 The advisor is read-only. It must not edit files or execute implementation
 commands.

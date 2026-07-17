@@ -38,6 +38,10 @@ if ! command -v jq >/dev/null 2>&1; then
       printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"quapp-guard: git checkout/restore . blocked (degraded mode — install jq for full guard)."}}'
       exit 0
     fi
+    if printf '%s' "$raw" | grep -Eq '"command"[^}]*rm[[:space:]]+-[a-zA-Z]*r[a-zA-Z]*f[^}]*(\.git|\.env|"/"|\\\.)'; then
+      printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"quapp-guard: rm -rf on .git/.env/root blocked (degraded mode — install jq for full guard)."}}'
+      exit 0
+    fi
   fi
   # Block edits to JupyterLab symlinks
   if printf '%s' "$raw" | grep -q 'quapp-jupyterlab-ai-assistant-ext' && printf '%s' "$raw" | grep -Eq '"(CLAUDE|GEMINI)\.md"'; then
@@ -93,6 +97,14 @@ case "$tool" in
       fi
     fi
 
+    # BLOCK: rm -rf on dangerous targets (.git, .env files, /, ., or bare wildcard)
+    # Allows rm -rf on build dirs (build/, dist/, node_modules/, .gradle/, etc.).
+    if printf '%s' "$cmd_unquoted" | grep -Eq '(^|[[:space:];|&`(])rm[[:space:]]+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*|rm[[:space:]]+-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*'; then
+      if printf '%s' "$cmd_unquoted" | grep -Eq 'rm[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*(\.git[[:space:]/$]|\.env[[:space:]/$]|/[[:space:]]|^\.?[[:space:]]*$|\*[[:space:]]|[[:space:]]\*)'; then
+        emit_deny "rm -rf on .git, .env, /, ., or wildcard target is irreversible. Ask the user to run this themselves if truly intended."
+      fi
+    fi
+
     # yarn-not-npm: npm used inside the frontend repo
     if printf '%s' "$cmd" | grep -Eq '(^|[^[:alnum:]])npm([[:space:]]|$)' \
        && printf '%s' "$cwd" | grep -q 'quapp-functions-frontend'; then
@@ -135,6 +147,11 @@ case "$tool" in
 
   Edit|Write)
     fp="$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')"
+
+    # BLOCK: writes to .env files (local-only, must never be committed)
+    if printf '%s' "$fp" | grep -Eq '(^|/)\.env(\.[a-zA-Z0-9]+)?$'; then
+      emit_deny ".env files are local-only and must never be committed. Set variables via shell export, AWS Secrets Manager, or workspace env config instead."
+    fi
 
     # BLOCK: the JupyterLab ext CLAUDE.md / GEMINI.md are symlinks to AGENTS.md
     if printf '%s' "$fp" | grep -q 'quapp-jupyterlab-ai-assistant-ext' \

@@ -18,13 +18,15 @@ other project.
   `security-review` for the concurrency / architecture / security lenses and large cross-repo
   diffs, exactly as `docs/rules/model-routing.md` already specifies. Nothing about this path
   changes — it stays automatic and stays at `opus`.
-- **Advisor — Claude Fable 5, via `.claude/agents/engineering-advisor.md`.** A **separate, scarce
-  advisory role** (not simply a "stronger Opus"): read-only (`Read, Grep, Glob` only — no edits,
+- **Advisor — Claude Opus (default), via `.claude/agents/engineering-advisor.md`.** A **separate, scarce
+  advisory role** (not simply a "stronger Opus reviewer"): read-only (`Read, Grep, Glob` only — no edits,
   no commands), manually invoked by the executor, never auto-spawned. The distinction is *role*, not
-  just tier — Opus reviews automatically; Fable advises manually at genuine decision boundaries.
-  Eligible only after Opus when at least one hard condition is met (see `engineering-advisor.md`):
-  Opus leaves ≥2 viable approaches open, two distinct attempts have failed, the decision has high
-  rollback cost, or a final recommendation is needed for genuinely high-risk work.
+  just tier — the `deep-reviewer` agent reviews automatically; the advisor advises manually at genuine
+  decision boundaries. Eligible only after deep-reviewer has run and at least one hard condition is met
+  (see `engineering-advisor.md`): ≥2 viable approaches remain open, two distinct attempts have failed,
+  the decision has high rollback cost, or a final recommendation is needed for genuinely high-risk work.
+  The agent frontmatter defaults to `model: opus` for guaranteed availability; swap to `model: fable`
+  in `agents/engineering-advisor.md` if the `fable` alias is confirmed available in your environment.
 
 The key distinction from `opus` escalation: `opus` (`deep-reviewer`) fires automatically whenever
 a review lens or diff size crosses a threshold — routine, high-volume escalation. `engineering-advisor`
@@ -56,7 +58,7 @@ verifies every claim against the repository before acting on it.
 
 ## How to verify which model an agent used
 
-- Check the agent's frontmatter: `.claude/agents/engineering-advisor.md` → `model: fable`;
+- Check the agent's frontmatter: `.claude/agents/engineering-advisor.md` → `model: opus` (default; may be set to `model: fable` if upgraded);
   `.claude/agents/deep-reviewer.md` → `model: opus`; `.claude/agents/drafter.md` → `model: haiku`.
 - Check the session default: `.claude/settings.json` → `"model": "sonnet"` (this repo only —
   `/model` can still override it for the current session).
@@ -65,9 +67,10 @@ verifies every claim against the repository before acting on it.
 
 ## Limitations and cost trade-offs
 
-- Fable is the most expensive, highest-latency tier available here — every invocation should be
+- The advisor at `opus` is already the highest auto-available tier; every invocation should be
   deliberate. If `engineering-advisor` starts firing on routine work, that's a routing bug, not
-  expected behavior — tighten the trigger criteria rather than tolerating it.
+  expected behavior — tighten the trigger criteria rather than tolerating it. If the `fable` alias
+  becomes available and you upgrade, be aware Fable is higher-latency and more expensive.
 - The advisor is read-only by design; it cannot verify its own recommendation against a live test
   run. The executor is always responsible for running validation after implementing the advice.
 - This split adds a coordination step (evidence packet → advice → verify → implement) that costs
@@ -76,23 +79,18 @@ verifies every claim against the repository before acting on it.
 - Pinning `"model": "sonnet"` in `settings.json` sets the *default* for this repo; it does not
   prevent an explicit `/model` switch mid-session, nor does it change any other repo's settings.
 
-## Environment prerequisite for Fable
+## Optional Fable upgrade
 
-`model: fable` in `engineering-advisor.md` requires the `fable` model alias
-to be available in the current Claude Code environment. Verify before first use:
+The advisor defaults to `model: opus` (guaranteed available). If you have
+access to the `fable` alias, you can upgrade for stronger reasoning:
 
-```
-/model
-```
+1. Verify `fable` appears in `/model` or the model list.
+2. Edit `agents/engineering-advisor.md` frontmatter: `model: opus` → `model: fable`.
+3. Update the verification section below accordingly.
 
-or check that `fable` appears in the model list. If `fable` is not available:
-- Use `opus` as a direct fallback — the advisor's read-only contract (`Read`,
-  `Grep`, `Glob` only) and response structure remain identical.
-- Swap the frontmatter: `model: fable` → `model: opus` in
-  `agents/engineering-advisor.md`, or pass `model: "opus"` explicitly in the
-  `Agent` tool call.
-- The quality difference for this specific read-only advisory role is small;
-  the routing criteria and discipline are more important than the model tier.
+The routing criteria and read-only contract (`Read`, `Grep`, `Glob` only)
+remain identical regardless of the model tier — the discipline is more
+important than the tier.
 
 ## Rollback
 

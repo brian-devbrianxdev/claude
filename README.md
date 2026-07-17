@@ -9,7 +9,7 @@ and deterministic guards. Runtime state and local secrets are git-ignored.
 |------|-----------|
 | `skills/` | 16 capability-named skills (see `skills/README.md`) |
 | `commands/` | Lifecycle and review commands: `/start-task`, `/ship-task`, `/review-mr`, `/handoff` (all pinned to sonnet) |
-| `agents/` | Model-pinned subagents: `deep-reviewer` (opus), `drafter` (haiku), `engineering-advisor` (fable, scarce/manual-only) — see `docs/rules/model-routing.md` and `MODEL_ROUTING.md` |
+| `agents/` | Model-pinned subagents: `deep-reviewer` (opus), `drafter` (haiku), `engineering-advisor` (opus, scarce/manual-only; upgradeable to `fable` if available — see frontmatter) — see `docs/rules/model-routing.md` and `docs/architecture/executor-advisor-architecture.md` |
 | `rules/` | Workspace rules (layering, JDK matrix, two DBs, contract sync, the Java gate, **model routing** — `docs/rules/model-routing.md`) |
 | `profiles/quapp/` | Project identity (tracker key, GitLab host, branch model) |
 | `hooks/` | `quapp-guard.sh` — accidental-destruction guardrail (blocks destructive git commands and symlink edits; not a security sandbox — bypassable via absolute paths or shell wrappers) · `java-gate.sh` — Java coding-standards reminder |
@@ -42,7 +42,7 @@ user-level install.
 - GitNexus MCP — enables graph-based code navigation (all 6 repos indexed)
 - Atlassian MCP — enables Jira/Confluence integration (`/start-task`, `release-note`)
 - `fable` model alias — optional; if unavailable, manually invoke the advisor
-  with `opus` or change its frontmatter as documented in `MODEL_ROUTING.md`
+  with `opus` or change its frontmatter as documented in `docs/architecture/executor-advisor-architecture.md`
 
 **Verify hooks are running:** open any repo in the workspace, run a command, and
 confirm the guard output appears. If silent, check `settings.json` hook paths and

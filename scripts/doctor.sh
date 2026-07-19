@@ -75,11 +75,11 @@ if [ "$java21" = 0 ]; then
   done
 fi
 # Linux fallback: look for common install roots.
-if [ "$java17" = 0 ] && [ -d /usr/lib/jvm ]; then
-  ls /usr/lib/jvm 2>/dev/null | grep -q '17' && java17=1
+if [ "$java17" = 0 ] && compgen -G "/usr/lib/jvm/*17*" >/dev/null 2>&1; then
+  java17=1
 fi
-if [ "$java21" = 0 ] && [ -d /usr/lib/jvm ]; then
-  ls /usr/lib/jvm 2>/dev/null | grep -q '21' && java21=1
+if [ "$java21" = 0 ] && compgen -G "/usr/lib/jvm/*21*" >/dev/null 2>&1; then
+  java21=1
 fi
 if [ "$java17" = 1 ]; then
   pass "Java 17 available (functions-backend, quapp-migration)"

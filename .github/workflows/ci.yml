@@ -1,0 +1,92 @@
+name: CI
+
+# Repo-internal consistency checks for this Claude Code harness. Deliberately
+# does NOT run scripts/doctor.sh here — that script diagnoses whether a real
+# Quapp workspace checkout is ready to use (root CLAUDE.md, glab auth, the
+# repo's own JDK matrix), none of which exists on a bare CI runner. CI checks
+# what's actually verifiable out of context: shell syntax, JSON validity,
+# skill/agent/command frontmatter, internal markdown links, the guard's own
+# regression suite, and a secret scan.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard-tests:
+    name: Guard regression suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests/quapp-guard-test.sh
+        run: bash tests/quapp-guard-test.sh
+
+  shell-checks:
+    name: Shell syntax + shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: bash -n (syntax) on every tracked .sh file
+        run: |
+          status=0
+          while IFS= read -r -d '' f; do
+            bash -n "$f" || status=1
+          done < <(git ls-files -z '*.sh')
+          exit "$status"
+      - name: shellcheck
+        run: |
+          command -v shellcheck >/dev/null 2>&1 || sudo apt-get update && sudo apt-get install -y shellcheck
+          status=0
+          while IFS= read -r -d '' f; do
+            # -S warning: these scripts intentionally embed literal shell
+            # syntax inside single-quoted regex/test strings (guard patterns,
+            # test fixtures) that SC2016 (info) flags as "won't expand" —
+            # correct behavior, not a bug. SC1091 (can't follow sourced
+            # files) is noisy for hooks that read stdin/JSON, not source
+            # other scripts. Warning and above still fail the build.
+            shellcheck -e SC1091 -S warning "$f" || status=1
+          done < <(git ls-files -z '*.sh')
+          exit "$status"
+
+  json-validate:
+    name: JSON validity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: jq empty on every tracked .json file
+        run: |
+          status=0
+          while IFS= read -r -d '' f; do
+            jq empty "$f" || { echo "INVALID JSON: $f"; status=1; }
+          done < <(git ls-files -z '*.json' | grep -zv '^plugins/marketplaces/')
+          exit "$status"
+
+  frontmatter-validate:
+    name: Skill/agent/command frontmatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/check-frontmatter.sh
+
+  markdown-links:
+    name: Internal markdown links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/check-markdown-links.sh
+
+  gitleaks:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

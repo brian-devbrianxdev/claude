@@ -27,8 +27,8 @@ repo in the workspace:
 
 | Repo | Concern | Responsibility (one line) | Stack | Rules |
 |------|---------|---------------------------|-------|-------|
-| `<path/to/repo-a>` | <e.g. platform> | <one line: what it does> | <framework/lang + version> | [<repo-a>.md](.claude/docs/rules/<repo-a>.md) |
-| `<path/to/repo-b>` | <e.g. frontend> | <one line: what it does> | <framework/lang + version> | [<repo-b>.md](.claude/docs/rules/<repo-b>.md) |
+| `<path/to/repo-a>` | <e.g. platform> | <one line: what it does> | <framework/lang + version> | `.claude/docs/rules/<repo-a>.md` |
+| `<path/to/repo-b>` | <e.g. frontend> | <one line: what it does> | <framework/lang + version> | `.claude/docs/rules/<repo-b>.md` |
 
 Add a row per repo. If a repo has no dedicated rules file yet, link to the nearest general one
 instead of leaving the cell blank — an empty cell reads as "no rules exist," not "not written yet."

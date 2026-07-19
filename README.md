@@ -24,8 +24,10 @@ and deterministic guards. Runtime state and local secrets are git-ignored.
 | `profiles/quapp/` | Project identity (tracker key, GitLab host, branch model) |
 | `hooks/` | `quapp-guard.sh` — accidental-destruction guardrail (blocks destructive git commands and symlink edits; not a security sandbox, an advisory guard against *accidental* self-inflicted damage — a determined bypass is always possible, see its regression suite in `tests/` for what's covered) · `java-gate.sh` — Java coding-standards reminder |
 | `settings.json` | Shared hooks, model pin, and theme. `permissions.defaultMode` is intentionally absent — set it in the git-ignored `settings.local.json` to match your trust level (e.g. `{"permissions":{"defaultMode":"auto"}}`) |
-| `scripts/doctor.sh` | Environment check: required/optional deps (`jq`, `glab`, JDKs, Docker) + whether the root `CLAUDE.md` dependency (below) is satisfied |
+| `scripts/doctor.sh` | Environment check: required/optional deps (`jq`, `glab`, JDKs, Docker) + whether the root `CLAUDE.md` dependency (below) is satisfied. Local-use only, not run in CI (see below) |
+| `scripts/check-markdown-links.sh`, `scripts/check-frontmatter.sh` | Repo-internal consistency checks — relative markdown links resolve, skill/agent/command frontmatter is complete and correctly named. Run in CI |
 | `examples/CLAUDE.md` | Fill-in-the-blanks template for the root `CLAUDE.md` this harness expects but does not ship (workspace-specific, not reusable config) |
+| `.github/workflows/ci.yml` | On every push/PR: guard regression suite, shell syntax + shellcheck, JSON validity, frontmatter/markdown-link checks, gitleaks secret scan. Doesn't run `doctor.sh` — that script diagnoses a real Quapp workspace checkout, which a bare CI runner isn't |
 | `_archived-skills/` | Retired skills kept for provenance (out of discovery) |
 
 ## Skill architecture

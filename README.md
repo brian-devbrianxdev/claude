@@ -4,6 +4,16 @@ Version-controlled Claude Code configuration for the **Quapp** multi-repo worksp
 (CITYNOW Co. Ltd.). Tracks the reusable skill system, workspace rules, the project profile,
 and deterministic guards. Runtime state and local secrets are git-ignored.
 
+> **This is my real, daily-driver harness, published as-is.** `rules/`, `docs/rules/`, and
+> `profiles/quapp/` intentionally contain real project identifiers (company name, internal GitLab
+> host, repo names, Jira project key, architecture facts) because this config is actively used to
+> do real Quapp/CITYNOW engineering work, not a genericized template. None of it is a credential —
+> no tokens, keys, passwords, or customer data — but it is real internal naming and infrastructure
+> detail, disclosed intentionally rather than accidentally. If you're adapting this harness for
+> your own project, treat `skills/` and the harness mechanics (hooks, agents, model routing) as the
+> reusable part, and replace `profiles/`, `rules/`, and `docs/rules/` with your own — see
+> `examples/CLAUDE.md` and `scripts/doctor.sh` for a starting point.
+
 ## Layout
 | Path | What it is |
 |------|-----------|

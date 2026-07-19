@@ -26,8 +26,8 @@ other project.
   decision boundaries. Eligible only after deep-reviewer has run and at least one hard condition is met
   (see `engineering-advisor.md`): ≥2 viable approaches remain open, two distinct attempts have failed,
   the decision has high rollback cost, or a final recommendation is needed for genuinely high-risk work.
-  The agent frontmatter defaults to `model: opus` for guaranteed availability; swap to `model: fable`
-  in `agents/engineering-advisor.md` if the `fable` alias is confirmed available in your environment.
+  Frontmatter defaults to `model: opus` (guaranteed available); optionally set `model: fable` in
+  `agents/engineering-advisor.md` if a higher-tier alias exists in your environment.
 
 The key distinction from `opus` escalation: `opus` (`deep-reviewer`) fires automatically whenever
 a review lens or diff size crosses a threshold — routine, high-volume escalation. `engineering-advisor`
@@ -59,7 +59,7 @@ verifies every claim against the repository before acting on it.
 
 ## How to verify which model an agent used
 
-- Check the agent's frontmatter: `.claude/agents/engineering-advisor.md` → `model: opus` (default; may be set to `model: fable` if upgraded);
+- Check the agent's frontmatter: `.claude/agents/engineering-advisor.md` → `model: opus` (default);
   `.claude/agents/deep-reviewer.md` → `model: opus`; `.claude/agents/drafter.md` → `model: haiku`.
 - Check the session default: `.claude/settings.json` → `"model": "sonnet"` (this repo only —
   `/model` can still override it for the current session).
@@ -68,10 +68,9 @@ verifies every claim against the repository before acting on it.
 
 ## Limitations and cost trade-offs
 
-- The advisor at `opus` is already the highest auto-available tier; every invocation should be
-  deliberate. If `engineering-advisor` starts firing on routine work, that's a routing bug, not
-  expected behavior — tighten the trigger criteria rather than tolerating it. If the `fable` alias
-  becomes available and you upgrade, be aware Fable is higher-latency and more expensive.
+- The advisor at `opus` is already a high tier; every invocation should be deliberate. If
+  `engineering-advisor` starts firing on routine work, that's a routing bug, not expected behavior —
+  tighten the trigger criteria rather than tolerating it.
 - The advisor is read-only by design; it cannot verify its own recommendation against a live test
   run. The executor is always responsible for running validation after implementing the advice.
 - This split adds a coordination step (evidence packet → advice → verify → implement) that costs
@@ -79,19 +78,6 @@ verifies every claim against the repository before acting on it.
   boundaries — see "do not invoke" list in `engineering-advisor.md`.
 - Pinning `"model": "sonnet"` in `settings.json` sets the *default* for this repo; it does not
   prevent an explicit `/model` switch mid-session, nor does it change any other repo's settings.
-
-## Optional Fable upgrade
-
-The advisor defaults to `model: opus` (guaranteed available). If you have
-access to the `fable` alias, you can upgrade for stronger reasoning:
-
-1. Verify `fable` appears in `/model` or the model list.
-2. Edit `agents/engineering-advisor.md` frontmatter: `model: opus` → `model: fable`.
-3. Update the verification section below accordingly.
-
-The routing criteria and read-only contract (`Read`, `Grep`, `Glob` only)
-remain identical regardless of the model tier — the discipline is more
-important than the tier.
 
 ## Rollback
 

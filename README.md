@@ -1,5 +1,7 @@
 # .claude — Quapp Claude Code harness
 
+**Version 1.0.0** — see [CHANGELOG.md](CHANGELOG.md) for what changed and when.
+
 Version-controlled Claude Code configuration for the **Quapp** multi-repo workspace
 (CITYNOW Co. Ltd.). Tracks the reusable skill system, workspace rules, the project profile,
 and deterministic guards. Runtime state and local secrets are git-ignored.

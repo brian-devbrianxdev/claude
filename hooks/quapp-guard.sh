@@ -38,8 +38,8 @@ if ! command -v jq >/dev/null 2>&1; then
       printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"quapp-guard: git checkout/restore . blocked (degraded mode — install jq for full guard)."}}'
       exit 0
     fi
-    if printf '%s' "$raw" | grep -Eq '"command"[^}]*rm[[:space:]]+-[a-zA-Z]*r[a-zA-Z]*f[^}]*(\.git|\.env|"/"|\\\.)'; then
-      printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"quapp-guard: rm -rf on .git/.env/root blocked (degraded mode — install jq for full guard)."}}'
+    if printf '%s' "$raw" | grep -Eq '"command"[^}]*rm[[:space:]]+-[a-zA-Z]*r[a-zA-Z]*f[^}]*(\.git|\.env|"/"|'"'"'/'"'"'|~|\\\.)'; then
+      printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"quapp-guard: rm -rf on .git/.env/root/home blocked (degraded mode — install jq for full guard)."}}'
       exit 0
     fi
   fi
@@ -101,21 +101,28 @@ case "$tool" in
       fi
     fi
 
-    # BLOCK: rm -rf on dangerous targets (.git, .env files, /, ., or bare wildcard)
+    # BLOCK: rm -rf on dangerous targets (.git, .env files, /, ., ~ (home), or bare wildcard)
     # Catches combined short flags (-rf/-fr) and long options (--recursive/--force in any order).
-    # Allows rm -rf on build dirs (build/, dist/, node_modules/, .gradle/, etc.).
+    # Boundary is "any non-identifier char" (not just space/;|&`() so an absolute/relative
+    # invocation like /bin/rm -rf / or ./rm -rf / still counts as "rm" (mirrors the git boundary
+    # below). Allows rm -rf on build dirs (build/, dist/, node_modules/, .gradle/, etc.).
     if printf '%s' "$cmd_unquoted" | grep -Eq \
-      '(^|[[:space:];|&`(])rm[[:space:]]+(-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*)' \
+      '(^|[^[:alnum:]_])rm[[:space:]]+(-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*)' \
       || printf '%s' "$cmd_unquoted" | grep -Eq \
-      '(^|[[:space:];|&`(])rm[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*(--recursive[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*--force|--force[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*--recursive)'; then
+      '(^|[^[:alnum:]_])rm[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*(--recursive[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*--force|--force[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*--recursive)'; then
+      # Target-matching uses its own normalization: strip quote CHARACTERS (not whole spans, unlike
+      # cmd_unquoted above) from the flattened raw command, so a quoted dangerous target — either
+      # style, e.g. rm -rf '/' or rm -rf ".git" — still lands adjacent to the flags instead of
+      # hiding behind its quotes. Safe to derive from raw $cmd here because the outer gate above
+      # already required a bare (non-quoted-span) "rm -rf" to reach this branch, so a quoted
+      # non-command string (e.g. a commit message body) can't trigger it.
+      cmd_rm_target="$(printf '%s' "$cmd" | tr '\n' ' ' | sed "s/[\"']//g")"
       # End-of-word anchor uses ($|[[:space:]]) — NOT [$] which is a literal dollar in a char class.
       # Skip both short (-rf) and long (--recursive) flags before checking the dangerous target.
-      # Dangerous targets: / . ./ .git .env * — each must end at whitespace or end of string.
-      if printf '%s' "$cmd_unquoted" | grep -Eq \
-        'rm[[:space:]]+((-[a-zA-Z]+|--[a-zA-Z][a-zA-Z-]*)[[:space:]]+)*(\/([[:space:]]|$)|\.([[:space:]]|$)|\.\/([[:space:]]|$)|\.git([[:space:]]|$)|\.env([[:space:]]|$)|[*]([[:space:]]|$))' \
-        || { printf '%s' "$cmd_unquoted" | grep -Eq '(^|[[:space:];|&`(])rm[[:space:]]' \
-             && printf '%s' "$cmd" | grep -Eq '"(/|[.]git|[.]env|[.]|[*])"'; }; then
-        emit_deny "rm -rf on .git, .env, /, ., or wildcard target is irreversible. Ask the user to run this themselves if truly intended."
+      # Dangerous targets: / . ./ .git .env ~ ~/ $HOME * — each must end at whitespace or end of string.
+      if printf '%s' "$cmd_rm_target" | grep -Eq \
+        'rm[[:space:]]+((-[a-zA-Z]+|--[a-zA-Z][a-zA-Z-]*)[[:space:]]+)*(\/([[:space:]]|$)|\.([[:space:]]|$)|\.\/([[:space:]]|$)|\.git([[:space:]]|$)|\.env([[:space:]]|$)|~([[:space:]]|$)|~\/([[:space:]]|$)|\$HOME([[:space:]]|$)|[*]([[:space:]]|$))'; then
+        emit_deny "rm -rf on .git, .env, /, ., ~ (home), or wildcard target is irreversible. Ask the user to run this themselves if truly intended."
       fi
     fi
 

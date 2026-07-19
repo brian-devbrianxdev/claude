@@ -98,6 +98,21 @@ assert_bash 'rm -rf ".env" (quoted)'           'rm -rf ".env"'     deny
 assert_bash "rm -rf * (wildcard)"              'rm -rf *'          deny
 assert_bash "rm --recursive --force /"         'rm --recursive --force /'   deny
 assert_bash "rm --force --recursive /"         'rm --force --recursive /'   deny
+assert_bash "rm -rf '/' (single-quoted slash)"     "rm -rf '/'"     deny
+assert_bash "rm -rf '.git' (single-quoted)"        "rm -rf '.git'"  deny
+assert_bash "rm -rf '.env' (single-quoted)"        "rm -rf '.env'"  deny
+assert_bash "rm -rf '*' (single-quoted wildcard)"  "rm -rf '*'"     deny
+assert_bash "rm -rf ~ (home, unquoted)"        'rm -rf ~'          deny
+assert_bash "rm -rf ~/ (home, trailing slash)" 'rm -rf ~/'         deny
+assert_bash 'rm -rf $HOME (unquoted)'          'rm -rf $HOME'      deny
+assert_bash 'rm -rf "$HOME" (double-quoted)'   'rm -rf "$HOME"'    deny
+echo ""
+
+# ── rm -rf: wrapped/aliased invocations (still DENY expected) ────────────────
+echo "---- rm -rf via wrappers (DENY expected) ----"
+assert_bash "/bin/rm -rf / (absolute path)"        '/bin/rm -rf /'              deny
+assert_bash "command rm -rf / (builtin bypass)"    'command rm -rf /'          deny
+assert_bash "env rm -rf / (env wrapper)"           'env rm -rf /'              deny
 echo ""
 
 # ── rm -rf: safe targets ──────────────────────────────────────────────────────
@@ -124,6 +139,14 @@ echo ""
 echo "---- git reset --hard in commit message (ALLOW expected) ----"
 assert_bash "commit message contains reset text"  \
   'git commit -m "describes git reset --hard behavior"'  allow
+echo ""
+
+echo "---- git reset --hard via wrappers (DENY expected) ----"
+assert_bash "command git reset --hard"          'command git reset --hard'          deny
+assert_bash "env git reset --hard"              'env git reset --hard'              deny
+assert_bash "bash -c 'git reset --hard'"        "bash -c 'git reset --hard'"        deny
+assert_bash "sh -c 'git clean -fd'"             "sh -c 'git clean -fd'"             deny
+assert_bash "chained: git reset --hard; ls"     'git reset --hard; ls'              deny
 echo ""
 
 # ── git clean -f ──────────────────────────────────────────────────────────────

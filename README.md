@@ -12,8 +12,10 @@ and deterministic guards. Runtime state and local secrets are git-ignored.
 | `agents/` | Model-pinned subagents: `deep-reviewer` (opus), `drafter` (haiku), `engineering-advisor` (opus, scarce/manual-only; upgradeable to `fable` if available — see frontmatter) — see `docs/rules/model-routing.md` and `docs/architecture/executor-advisor-architecture.md` |
 | `rules/` | Workspace rules (layering, JDK matrix, two DBs, contract sync, the Java gate, **model routing** — `docs/rules/model-routing.md`) |
 | `profiles/quapp/` | Project identity (tracker key, GitLab host, branch model) |
-| `hooks/` | `quapp-guard.sh` — accidental-destruction guardrail (blocks destructive git commands and symlink edits; not a security sandbox — bypassable via absolute paths or shell wrappers) · `java-gate.sh` — Java coding-standards reminder |
+| `hooks/` | `quapp-guard.sh` — accidental-destruction guardrail (blocks destructive git commands and symlink edits; not a security sandbox, an advisory guard against *accidental* self-inflicted damage — a determined bypass is always possible, see its regression suite in `tests/` for what's covered) · `java-gate.sh` — Java coding-standards reminder |
 | `settings.json` | Shared hooks, model pin, and theme. `permissions.defaultMode` is intentionally absent — set it in the git-ignored `settings.local.json` to match your trust level (e.g. `{"permissions":{"defaultMode":"auto"}}`) |
+| `scripts/doctor.sh` | Environment check: required/optional deps (`jq`, `glab`, JDKs, Docker) + whether the root `CLAUDE.md` dependency (below) is satisfied |
+| `examples/CLAUDE.md` | Fill-in-the-blanks template for the root `CLAUDE.md` this harness expects but does not ship (workspace-specific, not reusable config) |
 | `_archived-skills/` | Retired skills kept for provenance (out of discovery) |
 
 ## Skill architecture
@@ -29,6 +31,18 @@ loads it as project-level configuration when the workspace root is opened.
 Do not install it as `~/.claude`. Hook paths in `settings.json` are anchored
 to `$CLAUDE_PROJECT_DIR/.claude/` and will not resolve correctly from a
 user-level install.
+
+**This repo does not ship a root `CLAUDE.md`.** `task-scoping`,
+`change-implementation`, `completion-audit`, and `review-mr` all read
+`CLAUDE.md` → Repository Map (one level above `.claude/`, at your workspace
+root) to figure out which repo a task targets — that file is workspace-specific
+project knowledge, not reusable harness config. Copy `examples/CLAUDE.md` to
+your workspace root and fill in your own repos/rules links.
+
+After cloning, run `bash .claude/scripts/doctor.sh` — it checks for the
+required/optional dependencies below plus the root `CLAUDE.md`, and tells you
+exactly what's missing before you rely on the full `/start-task`→`/ship-task`
+lifecycle.
 
 **Required:**
 - Claude Code (latest)

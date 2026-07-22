@@ -8,23 +8,40 @@ dependencies free of known CVEs.
 
 ### Password Storage
 
+OWASP's preference order: **Argon2id first**, **scrypt second**, **bcrypt/PBKDF2 only when a
+constraint (e.g. FIPS-140) forces it**. If auth is delegated to an external identity provider
+(Cognito, Auth0, an internal SSO), this section only applies if the service *also* stores some
+credential locally (an API key, a service-account secret) rather than end-user login — check which
+is actually true before assuming this applies.
+
 ```java
-// ✅ GOOD: Use BCrypt or Argon2
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+// ✅ PREFERRED: Argon2id (OWASP first choice)
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 
-// BCrypt (widely supported)
-PasswordEncoder encoder = new BCryptPasswordEncoder(12);  // strength 12
-String hash = encoder.encode(rawPassword);
-boolean matches = encoder.matches(rawPassword, hash);
-
-// Argon2 (recommended for new projects)
 PasswordEncoder encoder = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
 String hash = encoder.encode(rawPassword);
+
+// ✅ ACCEPTABLE fallback: BCrypt — note the hard 72-byte input cap (bcrypt truncates
+// silently beyond it; enforce a max length check before encoding, don't rely on bcrypt to reject it)
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+PasswordEncoder encoder = new BCryptPasswordEncoder(12);  // work factor >= 10
+String hash = encoder.encode(rawPassword);
+boolean matches = encoder.matches(rawPassword, hash);
 
 // ❌ BAD: MD5, SHA1, SHA256 without salt
 String hash = DigestUtils.md5Hex(password);  // NEVER for passwords!
 ```
+
+### SpEL injection — relevant wherever `@PreAuthorize`/`@PostAuthorize` SpEL is used
+
+A codebase that leans on Spring Security method-security SpEL (`@PreAuthorize("@fooAclService.can(...)")`,
+custom `hasPrivilege(...)` expressions, etc.) is safe **as long as the SpEL is always a compile-time
+literal string in an annotation**. The risk is a *different* pattern: never build a
+`SpelExpressionParser` expression string by concatenating user/request input and then evaluating
+it — that's a genuine SpEL-injection vector (arbitrary expression evaluation), distinct from and
+unrelated to safe, static `@PreAuthorize("...")` usage. Flag any dynamic
+`new SpelExpressionParser().parseExpression(someRuntimeString)` as a Blocker if `someRuntimeString`
+can be influenced by request data.
 
 ### Authorization Checks
 

@@ -137,6 +137,33 @@ Statement stmt = connection.createStatement();
 stmt.executeQuery(sql);
 ```
 
+## SSRF (Server-Side Request Forgery)
+
+Relevant any time a service builds an outbound HTTP call (WebClient/RestTemplate) from a URL or host
+that originated in a request — a webhook target, a callback URL, an import-from-URL feature. First
+check whether any outbound call in the diff actually takes a caller-supplied URL/host at all — most
+outbound integrations call a fixed, hardcoded provider endpoint and this doesn't apply — but flag it
+immediately if a new feature introduces a caller-influenced destination:
+
+```java
+// ❌ BAD: fetch a user-supplied URL directly
+webClient.get().uri(request.getCallbackUrl()).retrieve()...
+
+// ✅ GOOD: allowlist the resolvable host, and re-check the resolved IP (not just the hostname)
+// isn't a private/link-local/loopback range, to prevent DNS-rebinding to internal services
+if (!allowedHosts.contains(URI.create(request.getCallbackUrl()).getHost())) {
+    throw new ValidationException("Callback host not permitted");
+}
+InetAddress resolved = InetAddress.getByName(URI.create(request.getCallbackUrl()).getHost());
+if (resolved.isLoopbackAddress() || resolved.isLinkLocalAddress() || resolved.isSiteLocalAddress()) {
+    throw new ValidationException("Callback resolves to a non-routable/internal address");
+}
+```
+
+Also disable automatic redirect-following on such a client, or re-validate the redirect target the
+same way — an allowlisted host that 302-redirects to an internal address defeats a hostname-only
+check.
+
 ## Secure Deserialization
 
 ### Avoid Java Serialization

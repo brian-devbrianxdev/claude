@@ -5,324 +5,114 @@ description: Analyze Java project architecture at macro level - package structur
 
 # Architecture Review Skill
 
-Analyze project structure at the macro level - packages, modules, layers, and boundaries.
+Analyze package/module structure and layering **against what the target repo actually does today**,
+not a generic template. This applies to any Java/Spring Boot (or Jakarta EE) codebase — the process
+below is discovery-first by design: identify the repo's real pattern before judging it.
 
-## When to Use
-- User asks "review the architecture" / "check project structure"
-- Evaluating package organization
-- Checking dependency direction between layers
-- Identifying architectural violations
-- Assessing clean/hexagonal architecture compliance
+## Step 0 — Establish the baseline before recommending anything
 
----
+Don't assume Clean/Hexagonal Architecture, DDD, or package-by-feature. Look:
+- Is the top-level package split by technical layer (`controller/service/repository`), by
+  feature/domain, or hexagonal (`domain/application/adapter`)?
+- Within that, is there a consistent sub-convention (e.g. one sub-package per domain inside each
+  layer)? Is it followed uniformly, or only in some parts of the codebase?
+- What does the codebase's own documentation (README/CLAUDE.md/ADRs) claim the pattern is — and does
+  a quick sample of 2-3 real classes actually match that claim? (Docs drift from code; verify, don't
+  trust the doc alone.)
 
-## Quick Reference: Architecture Smells
+**Do not recommend restructuring the baseline (package-by-feature, Hexagonal, a module-boundary
+tool like Spring Modulith) as a review finding.** Per the engineering principle "don't recommend a
+structural rewrite without evidence of independent-deployment, ownership, scaling, or compliance
+pain forcing it": grade new code for **consistency with the pattern already established**, and only
+raise a macro-restructuring recommendation as a separately-scoped initiative when there's a concrete
+driver (see "Criteria for a new module or service" below) — never as an inline code-review comment
+on an unrelated diff.
 
-| Smell | Symptom | Impact |
-|-------|---------|--------|
-| Package-by-layer bloat | `service/` with 50+ classes | Hard to find related code |
-| Domain → Infra dependency | Entity imports `@Repository` | Core logic tied to framework |
-| Circular dependencies | A → B → C → A | Untestable, fragile |
-| God package | `util/` or `common/` growing | Dump for misplaced code |
-| Leaky abstractions | Controller knows SQL | Layer boundaries violated |
+## Real anti-patterns to check for (illustrative — verify against the actual diff, don't assume)
 
----
+These recur across Spring Boot codebases regardless of the specific package convention chosen; treat
+them as a checklist, and cite the actual file/class you found violating it, not the example below:
 
-## Package Organization Strategies
+| Anti-pattern | What it looks like | Why it matters | What to recommend instead |
+|---|---|---|---|
+| `@Transactional` on a controller method | A `@RestController` method with `@Transactional` sitting next to `@GetMapping`/`@PostMapping` | Puts the transaction boundary in the web layer; usually masks a `LazyInitializationException` rather than being deliberate | Move the boundary to the service method the controller delegates to; fix the underlying fetch/DTO mapping if lazy-loading is the real issue |
+| A service reaching into **another domain's** repository directly | `OrderServiceImpl` autowires `UserRepository`, `PaymentRepository`, `InventoryRepository`, etc., instead of calling those domains' own services | Cross-domain repository reach-through — the calling domain now has a hidden dependency on another domain's persistence shape, bypassing whatever invariants that domain's service enforces | Call the owning domain's service, not its repository |
+| Business logic or silent exception-swallowing inside a controller | A controller catches a parsing/validation exception and unilaterally returns a default/empty result instead of a proper error response; a controller clamps/normalizes input instead of delegating that to a validator | Controllers should be thin adapters: parse → delegate → map response; silent behavior changes on invalid input are easy to miss in review | Push the decision into a DTO validator (`@Min`/`@Max`/custom `ConstraintValidator`) or the service, and let invalid input produce a real validation error |
+| A mapper (MapStruct or hand-written) calling a repository or service | A `@Mapping`-annotated method resolves extra data via an injected repository inside what's supposed to be a pure transform | Blurs the mapper/service boundary; the mapper is no longer a pure, side-effect-free, easily-unit-testable transform | Resolve the extra data in the service before calling the mapper, or make the enrichment an explicit service method |
+| A God-class service | One service class growing far larger than its peers, injecting many unrelated collaborators, becoming the default place new unrelated logic gets bolted onto | Hard to review/test/change safely; a magnet for further unrelated additions | Split along an actual single-responsibility seam if one exists; don't split merely to hit a line-count target |
+| Inconsistent controller/versioning convention within the same codebase | Some domains use an interface + versioned-impl split (`FooController` interface, `FooControllerV1` impl); others put `@RestController` directly on one class | New code copying whichever convention happens to be more common further entrenches the inconsistency | Match the convention already used **in the specific domain/module being touched** — don't invent a third pattern, and don't silently retrofit unrelated legacy code in the same change |
 
-### Package-by-Layer (Traditional)
+## Criteria for introducing a new abstraction (concrete, not vague)
 
-```
-com.example.app/
-├── controller/
-│   ├── UserController.java
-│   ├── OrderController.java
-│   └── ProductController.java
-├── service/
-│   ├── UserService.java
-│   ├── OrderService.java
-│   └── ProductService.java
-├── repository/
-│   ├── UserRepository.java
-│   ├── OrderRepository.java
-│   └── ProductRepository.java
-└── model/
-    ├── User.java
-    ├── Order.java
-    └── Product.java
-```
+Reject a new interface/factory/strategy/builder/port-adapter unless **at least one** is true — and
+say which one in the review:
+1. There are **already 2+ concrete implementations** that need to vary independently at runtime.
+2. The abstraction is **required to break a compile-time dependency direction** (a lower layer would
+   otherwise be forced to import a higher layer's concrete type).
+3. A test genuinely needs to substitute the implementation, and a plain class + a mocking framework
+   isn't sufficient (e.g. a deliberate choice to leave a composite/facade interface unsealed
+   specifically so a fixed-version mocking library can still create a mock, while the real
+   exhaustiveness guarantee is enforced one level down on a sealed abstract base — a real, defensible
+   pattern, not an accident).
+4. An external contract (REST, event, DB) requires a stable seam independent of today's single
+   implementation.
 
-**Pros**: Familiar, simple for small projects
-**Cons**: Scatters related code, doesn't scale, hard to extract modules
+"We might need to swap X someday" is **not** sufficient on its own — that's the YAGNI case for
+rejecting the abstraction until one of the above becomes concrete.
 
-### Package-by-Feature (Recommended)
+## Criteria for introducing a new module or service (not just a package)
 
-```
-com.example.app/
-├── user/
-│   ├── UserController.java
-│   ├── UserService.java
-│   ├── UserRepository.java
-│   └── User.java
-├── order/
-│   ├── OrderController.java
-│   ├── OrderService.java
-│   ├── OrderRepository.java
-│   └── Order.java
-└── product/
-    ├── ProductController.java
-    ├── ProductService.java
-    ├── ProductRepository.java
-    └── Product.java
-```
+Do not propose splitting a domain out into a new deployable service without a documented, concrete
+driver: an independent scaling need, an independent deploy cadence already blocked by coupling, a
+different team owning it, or a compliance/data-isolation requirement. Existing service boundaries
+usually reflect real product-concern splits drawn for good reasons — that's a reason those
+boundaries exist, not a license to draw more of them without the same kind of justification.
 
-**Pros**: Related code together, easy to extract, clear boundaries
-**Cons**: May need shared kernel for cross-cutting concerns
+## When to flag that a decision needs a written record (ADR-style)
 
-### Hexagonal/Clean Architecture
+Recommend capturing the rationale somewhere durable (an ADR if the repo has that convention,
+otherwise the ticket/PR description) — don't let it be silently decided in code — when a change:
+- Introduces a new cross-cutting infra dependency (new cache, broker, external system integration).
+- Breaks or renegotiates a contract another team/service/consumer depends on.
+- Deliberately deviates from the established layering baseline (and the deviation is judged
+  justified, not accidental).
+- Chooses between two non-trivial designs where the reasoning won't be obvious from the diff alone.
 
-```
-com.example.app/
-├── domain/                    # Pure business logic (no framework imports)
-│   ├── model/
-│   │   └── User.java
-│   ├── port/
-│   │   ├── in/               # Use cases (driven)
-│   │   │   └── CreateUserUseCase.java
-│   │   └── out/              # Repositories (driving)
-│   │       └── UserRepository.java
-│   └── service/
-│       └── UserDomainService.java
-├── application/               # Use case implementations
-│   └── CreateUserService.java
-├── adapter/
-│   ├── in/
-│   │   └── web/
-│   │       └── UserController.java
-│   └── out/
-│       └── persistence/
-│           ├── UserJpaRepository.java
-│           └── UserEntity.java
-└── config/
-    └── BeanConfiguration.java
-```
+If the repo has no ADR mechanism, don't propose creating one as part of an unrelated change — just
+ask for the rationale to be captured in the MR/PR description instead.
 
-**Key rule**: Dependencies point inward (adapters → application → domain)
+## Review checklist
 
----
+- [ ] Controller has no `@Transactional`, no business/validation decision logic, no silent
+      exception-swallowing that changes response semantics.
+- [ ] Service does not reach into another domain's repository directly — goes through that domain's
+      service, or the reach-through is deliberate and justified in the diff/PR.
+- [ ] No persistence entity crosses into a controller response, request DTO, or serialized payload.
+- [ ] Mapper stays a pure transform — no repository/service calls inside a mapping method.
+- [ ] Any new abstraction meets at least one concrete criterion above; state which.
+- [ ] New code in a domain that already has an established convention (versioning, layering style)
+      follows it rather than inventing a new one.
+- [ ] Cross-cutting/contract-breaking changes have a rationale captured somewhere durable.
 
-## Dependency Direction Rules
-
-### The Golden Rule
-
-```
-┌─────────────────────────────────────────┐
-│              Frameworks                 │  ← Outer (volatile)
-├─────────────────────────────────────────┤
-│           Adapters (Web, DB)            │
-├─────────────────────────────────────────┤
-│         Application Services            │
-├─────────────────────────────────────────┤
-│          Domain (Core Logic)            │  ← Inner (stable)
-└─────────────────────────────────────────┘
-
-Dependencies MUST point inward only.
-Inner layers MUST NOT know about outer layers.
-```
-
-### Violations to Flag
-
-```java
-// ❌ Domain depends on infrastructure
-package com.example.domain.model;
-
-import org.springframework.data.jpa.repository.JpaRepository;  // Framework leak!
-import javax.persistence.Entity;  // JPA in domain!
-
-@Entity
-public class User {
-    // Domain polluted with persistence concerns
-}
-
-// ❌ Domain depends on adapter
-package com.example.domain.service;
-
-import com.example.adapter.out.persistence.UserJpaRepository;  // Wrong direction!
-
-// ✅ Domain defines port, adapter implements
-package com.example.domain.port.out;
-
-public interface UserRepository {  // Pure interface, no JPA
-    User findById(UserId id);
-    void save(User user);
-}
-```
-
----
-
-## Architecture Review Checklist
-
-### 1. Package Structure
-- [ ] Clear organization strategy (by-layer, by-feature, or hexagonal)
-- [ ] Consistent naming across modules
-- [ ] No `util/` or `common/` packages growing unbounded
-- [ ] Feature packages are cohesive (related code together)
-
-### 2. Dependency Direction
-- [ ] Domain has ZERO framework imports (Spring, JPA, Jackson)
-- [ ] Adapters depend on domain, not vice versa
-- [ ] No circular dependencies between packages
-- [ ] Clear dependency hierarchy
-
-### 3. Layer Boundaries
-- [ ] Controllers don't contain business logic
-- [ ] Services don't know about HTTP (no HttpServletRequest)
-- [ ] Repositories don't leak into controllers
-- [ ] DTOs at boundaries, domain objects inside
-
-### 4. Module Boundaries
-- [ ] Each module has clear public API
-- [ ] Internal classes are package-private
-- [ ] Cross-module communication through interfaces
-- [ ] No "reaching across" modules for internals
-
-### 5. Scalability Indicators
-- [ ] Could extract a feature to separate service? (microservice-ready)
-- [ ] Are boundaries enforced or just conventional?
-- [ ] Does adding a feature require touching many packages?
-
----
-
-## Common Anti-Patterns
-
-### 1. The Big Ball of Mud
-
-```
-src/main/java/com/example/
-└── app/
-    ├── User.java
-    ├── UserController.java
-    ├── UserService.java
-    ├── UserRepository.java
-    ├── Order.java
-    ├── OrderController.java
-    ├── ... (100+ files in one package)
-```
-
-**Fix**: Introduce package structure (start with by-feature)
-
-### 2. The Util Dumping Ground
-
-```
-util/
-├── StringUtils.java
-├── DateUtils.java
-├── ValidationUtils.java
-├── SecurityUtils.java
-├── EmailUtils.java      # Should be in notification module
-├── OrderCalculator.java # Should be in order domain
-└── UserHelper.java      # Should be in user domain
-```
-
-**Fix**: Move domain logic to appropriate modules, keep only truly generic utils
-
-### 3. Anemic Domain Model
-
-```java
-// Domain object is just data
-public class Order {
-    private Long id;
-    private List<OrderLine> lines;
-    private BigDecimal total;
-    // Only getters/setters, no behavior
-}
-
-// All logic in "service"
-public class OrderService {
-    public void addLine(Order order, Product product, int qty) { ... }
-    public void calculateTotal(Order order) { ... }
-    public void applyDiscount(Order order, Discount discount) { ... }
-}
-```
-
-**Fix**: Move behavior to domain objects (rich domain model)
-
-### 4. Framework Coupling in Domain
-
-```java
-package com.example.domain;
-
-@Entity  // JPA
-@Data    // Lombok
-@JsonIgnoreProperties(ignoreUnknown = true)  // Jackson
-public class User {
-    @Id @GeneratedValue
-    private Long id;
-
-    @NotBlank  // Validation
-    private String email;
-}
-```
-
-**Fix**: Separate domain model from persistence/API models
-
----
-
-## Analysis Commands
-
-When reviewing architecture, examine:
+## Analysis commands
 
 ```bash
 # Package structure overview
 find src/main/java -type d | head -30
 
-# Largest packages (potential god packages)
+# Largest packages / files (potential god package or god class)
 find src/main/java -name "*.java" | xargs dirname | sort | uniq -c | sort -rn | head -10
+find src/main/java -name "*.java" | xargs wc -l | sort -rn | head -10
 
-# Check for framework imports in domain
-grep -r "import org.springframework" src/main/java/*/domain/ 2>/dev/null
-grep -r "import javax.persistence" src/main/java/*/domain/ 2>/dev/null
+# @Transactional on a controller (should be zero)
+grep -rl "@Transactional" src/main/java --include="*Controller*.java"
 
-# Find circular dependencies (look for bidirectional imports)
-# Check if package A imports from B and B imports from A
+# JPA entity referenced outside the persistence package (needs manual judgement)
+grep -rln "import.*\.entity\." src/main/java --include="*Controller*.java" --include="*Dto*.java" --include="*Response*.java" --include="*Request*.java"
 ```
 
----
+## Token optimization
 
-## Recommendations Format
-
-When reporting findings:
-
-```markdown
-## Architecture Review: [Project Name]
-
-### Structure Assessment
-- **Organization**: Package-by-layer / Package-by-feature / Hexagonal
-- **Clarity**: Clear / Mixed / Unclear
-
-### Findings
-
-| Severity | Issue | Location | Recommendation |
-|----------|-------|----------|----------------|
-| High | Domain imports Spring | `domain/model/User.java` | Extract pure domain model |
-| Medium | God package | `util/` (23 classes) | Distribute to feature modules |
-| Low | Inconsistent naming | `service/` vs `services/` | Standardize to `service/` |
-
-### Dependency Analysis
-[Describe dependency flow, violations found]
-
-### Recommendations
-1. [Highest priority fix]
-2. [Second priority]
-3. [Nice to have]
-```
-
----
-
-## Token Optimization
-
-For large codebases:
-1. Start with `find` to understand structure
-2. Check only domain package for framework imports
-3. Sample 2-3 features for pattern analysis
-4. Don't read every file - look for patterns
+For large codebases: `find` for structure first, sample 2-3 domains for pattern-consistency (does
+this domain follow the majority convention or an established convention of its own?), grep for the
+specific anti-patterns above rather than reading every file.

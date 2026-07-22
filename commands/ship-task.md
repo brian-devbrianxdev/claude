@@ -45,7 +45,9 @@ always opus-class).
       MR-revision work on `[…] Resolve feedback merge request`. If more than one plausibly matches, ask.
    c. **No match → create it**: `createJiraIssue` (`issueTypeName: "Sub-task"`, `parent: "<KEY>"`),
       summary prefixed `[BE]`/`[FE]`, `additional_fields: {labels: ["Backend"|"Frontend"], timetracking:
-      {originalEstimate: "<time>"}}`. No Story Points on sub-tasks (`solution-planning` Step 7d pattern).
+      {originalEstimate: "<time>"}}`, and `assignee_account_id` = self (resolve once via
+      `atlassianUserInfo`) — mirrors `solution-planning` Step 7d's self-assign pattern. No Story Points
+      on sub-tasks.
    d. **Log the time**: `addWorklogToJiraIssue` on the sub-task with the time actually spent, Jira
       duration format (`"2h"`, `"1h 30m"` — no decimals). **Confirm the amount with the user first**
       unless they already stated it — never invent hours.

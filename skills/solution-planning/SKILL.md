@@ -1,6 +1,6 @@
 ---
 name: solution-planning
-description: Turn a scoped ticket into a solution design, an ordered implementation plan, and an effort/time estimate before any code. Proposes a recommended approach (with alternatives + trade-offs), breaks the work into steps mapped to repos/files, and estimates effort as a range with assumptions and confidence — accounting for mandatory tests, cross-repo contract sync, migrations, review/MR overhead, and a contingency buffer. Use when the user says "plan PQF-123", "how should we solve this", "estimate this ticket", "how long will this take", "re-estimate", or during backlog grooming. No code changes; writes the solution + plan in Vietnamese to the ticket (comment + Original Estimate + Story Points + role label), and optionally breaks the plan into Jira sub-tasks (each with its own label + estimate) when asked.
+description: Turn a scoped ticket into a solution design, an ordered implementation plan, and an effort/time estimate before any code. Proposes a recommended approach (with alternatives + trade-offs), breaks the work into steps mapped to repos/files, and estimates effort as a range with assumptions and confidence — accounting for mandatory tests, cross-repo contract sync, migrations, review/MR overhead, and a contingency buffer. Use when the user says "plan PQF-123", "how should we solve this", "estimate this ticket", "how long will this take", "re-estimate", or during backlog grooming. No code changes; writes the solution + plan in Vietnamese to the ticket (comment + Original Estimate + Story Points + role label), and optionally breaks the plan into Jira sub-tasks (each with its own label + estimate + self-assignee) when asked.
 ---
 
 # Solution Planning
@@ -80,9 +80,11 @@ original form — translate the prose, not the symbols.
       sub-tasks"). Group the implementation plan into a few **meaningful work units** (don't make one
       sub-task per micro-step), create each under the ticket via `createJiraIssue`
       (`issueTypeName: "Sub-task"`, `parent: "<KEY>"`), and on **each** sub-task set its own
-      **role label** + **Original Estimate** (`additional_fields: {labels:[…], timetracking:{originalEstimate:"2h"}}`).
-      Make the per-sub-task estimates (buffer included) **sum to the parent's likely roll-up**. Don't put
-      Story Points on sub-tasks.
+      **role label** + **Original Estimate** (`additional_fields: {labels:[…], timetracking:{originalEstimate:"2h"}}`)
+      **and assignee** — resolve the current user once via `atlassianUserInfo` and pass its `accountId`
+      as `assignee_account_id` on every `createJiraIssue` call (self-assign; sub-tasks don't go out
+      unassigned). Make the per-sub-task estimates (buffer included) **sum to the parent's likely
+      roll-up**. Don't put Story Points on sub-tasks.
       **The team's verified sub-task pattern** (mirror it): the impl + test work units, plus a
       **`[role] Review code`** sub-task, a **`[QA]` verify** sub-task (label `QAQC`) where there's manual
       verification, and — **mandatory on every ticket** — a **`[role] Resolve feedback merge request`**
@@ -90,7 +92,8 @@ original form — translate the prose, not the symbols.
       into impl, don't create sub-tasks for them" guidance — for this team they ARE their own sub-tasks.
       Prefix each summary with the discipline tag (`[BE]`/`[FE]`/`[QA]`) the team uses. Use the Jira
       duration format (`"7h"`, `"1h 30m"`, `"30m"`) — decimals like `"1.5h"` are unreliable.
-   Never touch worklog or status here.
+   Never touch worklog or status here — sub-tasks are created in the tracker's default status (To Do);
+   `/start-task` moves the specific sub-task being worked on to In Progress when work actually begins.
 
 ## Estimation method
 - Decompose to work items (per repo/layer/step). Size each: **S ≈ ≤2h · M ≈ ½ day · L ≈ 1–2 days · XL → split it.**
@@ -127,8 +130,10 @@ original form — translate the prose, not the symbols.
 - **Sub-tasks only on request** (Step 7d). When asked, mirror the team's verified pattern: impl + test
   units + a `Review code` sub-task + a `QA` verify sub-task (label `QAQC`) where relevant + a **mandatory
   `Resolve feedback merge request` sub-task on every ticket**. Each gets its own role label + Original
-  Estimate (buffer included), summing to the parent likely; no Story Points on sub-tasks. (This replaces
-  the old "don't create sub-tasks for review/MR/verify" rule.)
+  Estimate (buffer included) + **assignee (self, via `atlassianUserInfo`)**, summing to the parent
+  likely; no Story Points on sub-tasks, and leave status at the tracker default (To Do) — `/start-task`
+  owns moving a specific sub-task to In Progress. (This replaces the old "don't create sub-tasks for
+  review/MR/verify" rule.)
 
 ## Output Format
 Render in **Vietnamese** (identifiers/paths/terms stay original), in both the chat reply and the ticket
@@ -166,7 +171,7 @@ Suggested next: /start-task → change-implementation
 - [ ] No source-code changes made (the only writes are the ticket comment + estimate + Story Points + label + any sub-tasks).
 - [ ] Solution + plan written in Vietnamese and posted as a markdown comment on the ticket (Step 7a).
 - [ ] Original Estimate (likely, buffer in) **and Story Points (`customfield_10016` = likely ÷ 4)** set (Step 7b); role label applied, existing labels kept (Step 7c).
-- [ ] If the user asked for sub-tasks: created under the ticket as meaningful units, each with role label + Original Estimate summing to parent likely, **including a mandatory `Resolve feedback merge request` sub-task** (+ `Review code` and `QA` where relevant) (Step 7d).
+- [ ] If the user asked for sub-tasks: created under the ticket as meaningful units, each with role label + Original Estimate + **assignee (self)** summing to parent likely, **including a mandatory `Resolve feedback merge request` sub-task** (+ `Review code` and `QA` where relevant); status left at To Do (Step 7d).
 
 ## References
 - [task-scoping](../task-scoping/SKILL.md) (input: where) · [change-implementation](../change-implementation/SKILL.md)

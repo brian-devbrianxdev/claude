@@ -14,13 +14,19 @@ Reads project identity from [`../profiles/quapp/profile.md`](../profiles/quapp/p
 ## Steps
 
 1. **Capture / create the ticket.** Take the key from `$ARGUMENTS`. **If the Atlassian MCP is
-   connected**, fetch it read-only with `getJiraIssue` — include `comment` in `fields` and **read the
-   comment thread, not just the description**: PO/BA/dev/QA replies often refine or override the spec
-   (on conflict the latest comment usually wins; still-open questions are Unknowns to raise before
-   branching). Also note subtasks. If no key but a description is given, offer to create the
+   connected**, fetch it read-only with `getJiraIssue` — include `comment` **and `subtasks`** in `fields`
+   and **read the comment thread, not just the description**: PO/BA/dev/QA replies often refine or
+   override the spec (on conflict the latest comment usually wins; still-open questions are Unknowns to
+   raise before branching). If no key but a description is given, offer to create the
    issue (Story for a feature, Bug for a defect) via `createJiraIssue`. **If the MCP is unavailable
    or returns the wrong issue, fall back to the pasted ticket text** — Jira is never required.
    Restate the goal in one line.
+   - **Identify the unit being started.** If the key given is itself a Sub-task, it *is* the unit — no
+     further lookup. If it's a parent Story/Bug with sub-tasks (e.g. created by `solution-planning`),
+     find the specific sub-task the user is about to implement now (match by discipline `[BE]`/`[FE]`/
+     `[QA]` prefix + the repo(s) they're opening; **ask if more than one plausibly matches, or none is
+     clearly next**). Track both: `parentKey` (branch name / PQF reference) and `subtaskKey` (if any —
+     the thing Step 5 actually moves to In Progress).
 2. **Scope it.** Invoke the **`task-scoping`** skill to determine target repo(s), JDK, affected
    files/layers, and cross-repo contract/DB impact. Let the skill do it — don't re-derive here.
 3. **Confirm the branch base — STOP and ask.** Per `../rules/git-workflow.md`, the base is `staging`
@@ -28,8 +34,10 @@ Reads project identity from [`../profiles/quapp/profile.md`](../profiles/quapp/p
    then **WAIT for explicit confirmation. Do not create the branch until confirmed.**
 4. **Propose the branch name** `feature|bugfix/khactuong.ngohoang/PQF-<key>-<short-desc>` (prefix from
    the `bug|feature` arg or the issue type).
-5. **Move the ticket In Progress** (if MCP connected): `getTransitionsForJiraIssue` →
-   `transitionJiraIssue`. Skip silently if Jira isn't available.
+5. **Move the unit(s) In Progress** (if MCP connected): `getTransitionsForJiraIssue` →
+   `transitionJiraIssue` on the parent ticket, **and on `subtaskKey` too if one was identified in
+   Step 1** — don't leave the sub-task sitting in To Do while its parent shows In Progress. Skip
+   silently if Jira isn't available.
 6. **Create the branch** from the confirmed base **inside the target repo** (`cd` into the specific
    repo first — not a monorepo). Multiple repos → create the matching branch in each, or ask which to
    start with.
@@ -37,8 +45,9 @@ Reads project identity from [`../profiles/quapp/profile.md`](../profiles/quapp/p
    `../rules/java.md` gate). Do not start editing.
 
 ## Output
-A scope summary (repo / JDK / files / contracts), the confirmed base, the In-Progress ticket, and a
-created, correctly-named branch in the right repo — ready to implement.
+A scope summary (repo / JDK / files / contracts), the confirmed base, the In-Progress ticket (and its
+sub-task too, if one was identified in Step 1), and a created, correctly-named branch in the right
+repo — ready to implement.
 
 ## Token hygiene
 End the summary by recommending the user start the implementation in a **fresh session** (`/clear`)

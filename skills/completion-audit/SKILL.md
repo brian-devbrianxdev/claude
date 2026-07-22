@@ -30,6 +30,8 @@ Read-only. **Never edits code, never transitions tickets.** It audits, scores, a
 - Read access to all six repos (see root `CLAUDE.md` → Repository Map).
 - **Input = explicit ticket list.** The user supplies the keys (e.g. `PQF-21017 PQF-21432 PQF-21500`).
   Do not derive the set from a Fix Version or git history unless the user asks.
+- **Every relevant repo must be synced to latest `develop` before evidence-gathering starts** — see
+  Step 0. Do this yourself, sequentially, before invoking the `Workflow` tool.
 
 ## Execution model — multi-agent workflow
 This skill is an **explicit opt-in to the `Workflow` tool** (a skill whose instructions tell you to call
@@ -48,6 +50,31 @@ ticket's footprint at once).
   no `model` override). The script below already sets these.
 
 ## Workflow
+
+### Step 0 — Sync repos to latest `develop` (orchestrator, sequential, safety-gated)
+Before fanning out any agents, put every repo relevant to the ticket set on a known, current baseline
+so "already merged to develop" claims and GitNexus queries are trustworthy. Do this yourself,
+sequentially, in the main flow — **not** inside the parallel per-ticket agents in Step 2 (two agents
+racing a `git checkout` in the same repo is unsafe).
+
+For each relevant repo (see `CLAUDE.md` → Repository Map):
+1. `git status --short` — if dirty, **never discard**: `git stash push -u` (per `workspace.md` / root
+   safety rules) and note that a stash was made; if the dirty state looks like unfinished work you
+   don't recognize, stop and ask instead of stashing blind.
+2. Record the **current branch** (`git branch --show-current`) so it can be restored afterward.
+3. `git fetch origin && git checkout develop && git pull --ff-only origin develop`.
+4. If the repo's GitNexus index looks older than the new HEAD (session-start warning, or
+   `mcp__gitnexus__detect_changes`), reanalyze it (`gitnexus-cli` skill) before trusting graph queries
+   against it.
+
+Ticket-specific `feature/*`/`bugfix/*` branches are still inspected from this `develop` baseline via
+`git log <branch>`, `git diff develop..<branch>`, `git show <branch>:<path>` — **without** checking
+them out — so Step 2's parallel per-ticket agents never need to mutate the working tree themselves.
+
+**After** the release verdict (Step 4) has been reported, restore every repo you switched:
+`git checkout <original branch>` (and `git stash pop` if you stashed one). Never leave a repo sitting
+on `develop` when the audit started elsewhere — this skill is read-only and must not change what
+branch the user was working on.
 
 ### Step 1 — Normalize the release
 Collect the ticket keys from the user. For each, `getJiraIssue` (include `comment` in `fields`) and
@@ -142,9 +169,16 @@ Verdict: NO-GO   (completeness 88%, 1 ticket < 100%; 🔴 2 conflicts, 🟠 1 ri
 Then: the per-ticket evidence tables on request. **No code changes, no ticket transitions.**
 
 ## Rules Claude Must Follow
+- **Sync every relevant repo to latest `develop` before evidence-gathering** (Step 0), sequentially,
+  with git-status/stash safety; restore each repo's original branch (and stash) once the verdict is
+  reported. Never leave a repo switched to `develop` after the audit ends.
 - **Read-only**; cite real `path:line`. Mark anything unverifiable **⚠️ Unknown**, never invent.
 - **Not a monorepo** — name the specific repo for every file/contract/migration (`workspace.md`).
-- Untested code is **🟡 Partial**, not Done.
+- Untested code is **🟡 Partial**, not Done — **except in-scope FE source** (`quapp-functions-frontend`
+  entirely, and `quapp-jupyterlab-ai-assistant-ext`'s TS/React `src/` code), which per
+  [`rules/testing.md`](../../rules/testing.md) does not require new unit tests; implemented-but-untested
+  code there scores Done. The ext's Python server extension and its Playwright/Galata suite are **not**
+  covered and keep the normal rule.
 - A backend/ai-mcp contract change with **no matching consumer edit** in the release set is a conflict
   (missing counterpart), because no codegen propagates it.
 - Match each repo's JDK only matters if you build — this skill doesn't build; it reads.
@@ -152,6 +186,8 @@ Then: the per-ticket evidence tables on request. **No code changes, no ticket tr
 - JupyterLab ext: rules are in `AGENTS.md` (its `CLAUDE.md` is a symlink).
 
 ## Verification Checklist
+- [ ] Every relevant repo was synced to latest `develop` before evidence-gathering (Step 0, sequential,
+      stash-safe) and restored to its original branch afterward.
 - [ ] Every supplied ticket was fetched (or flagged ⚠️ Unknown) and decomposed into atomic requirements.
 - [ ] Each requirement traced to code **and** test, or marked ❌/🟡/⚠️ with a reason.
 - [ ] Release marked complete only if **every** ticket is 100%.
@@ -160,9 +196,10 @@ Then: the per-ticket evidence tables on request. **No code changes, no ticket tr
 - [ ] Go/No-Go stated with the math behind it.
 
 ## Anti-patterns
-❌ Trusting ticket status; ❌ counting untested code as done; ❌ averaging % and calling 88% "done" when a
-ticket is at 60%; ❌ checking only same-file edits and missing a broken cross-repo contract; ❌ editing code
-or moving tickets. ✅ Evidence-linked statuses, pairwise conflict checks, transparent Go/No-Go.
+❌ Trusting ticket status; ❌ counting untested code as done outside the in-scope-FE-source exception
+(`rules/testing.md`); ❌ averaging % and calling 88% "done" when a ticket is at 60%; ❌ checking
+only same-file edits and missing a broken cross-repo contract; ❌ editing code or moving tickets. ✅
+Evidence-linked statuses, pairwise conflict checks, transparent Go/No-Go.
 
 ## Workflow script template
 Run via the `Workflow` tool (this skill is the opt-in). Pass the ticket keys as `args`.
@@ -214,10 +251,17 @@ phase('Audit')
 const footprints = (await parallel(tickets.map(t => () =>
   agent(
     `Audit Jira ticket ${t} for the QUAPP workspace, exactly like single-ticket.md (the per-ticket audit).\n` +
+    `The orchestrator already synced every relevant repo to latest develop (Step 0) — do NOT git checkout ` +
+    `or switch branches yourself; inspect feature/bugfix branches read-only via git log/diff/show against ` +
+    `refs (e.g. git log <branch>, git diff develop..<branch>, git show <branch>:<path>).\n` +
     `1) getJiraIssue ${t}; build a flat checklist of atomic requirements (a Bug = defect no longer ` +
     `reproduces + regression test).\n` +
     `2) For each requirement, find implementing code AND tests across all six repos (cite repo:path:line). ` +
-    `Use .claude/rules/*.md to know where things live. Untested code is 🟡 Partial, not Done.\n` +
+    `Use .claude/rules/*.md to know where things live. Untested code is 🟡 Partial, not Done — EXCEPT ` +
+    `in-scope FE source (quapp-functions-frontend entirely, and quapp-jupyterlab-ai-assistant-ext's ` +
+    `TS/React src/ code only — NOT its Python server extension or Playwright/Galata suite), which per ` +
+    `rules/testing.md does not require new unit tests; score implemented-but-untested code there as ` +
+    `Done, not Partial.\n` +
     `3) Score ✅/🟡/❌/⚠️ and compute completionPct (Done=1, Partial=.5, Missing=0; exclude Unknown).\n` +
     `4) Record the footprint: every file touched, every cross-repo contract (dto/endpoint/ws/sse/stomp) ` +
     `changed, every shared config/auth key touched (security/jwt/rate-limit/env/yaml/constants), and any ` +

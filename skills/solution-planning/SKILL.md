@@ -45,7 +45,12 @@ original form — translate the prose, not the symbols.
    **non-goals** to bound scope.
 4. **Break into an ordered plan.** Sequence steps in dependency order; map each to repo/files/layer.
    Include the work the workspace *forces* and people forget:
-   - **Tests** (mandatory per `../../rules/java.md`; a bug fix needs a regression test).
+   - **Tests** (mandatory per `../../rules/java.md`; a bug fix needs a regression test) — **except
+     in-scope FE source**, which per [`../../rules/testing.md`](../../rules/testing.md) does not require
+     new unit tests: `quapp-functions-frontend` (entire repo) and `quapp-jupyterlab-ai-assistant-ext`'s
+     TS/React `src/` code only. Do not add a test-writing step, or pad the estimate, for that portion of
+     a ticket. Backend/ai-mcp/migration portions — and the ext's **Python** server-extension portion —
+     of the same ticket keep the mandatory-test step.
    - **Cross-repo contract sync** — no codegen, so *every* consumer of a changed DTO/route/WS/SSE is a
      separate step (frontend ↔ backend ↔ ai-mcp ↔ JupyterLab ext).
    - **Migration changeset** in the correct repo if the schema changes (QuaO DB vs AI-MCP DB).
@@ -85,11 +90,16 @@ original form — translate the prose, not the symbols.
       as `assignee_account_id` on every `createJiraIssue` call (self-assign; sub-tasks don't go out
       unassigned). Make the per-sub-task estimates (buffer included) **sum to the parent's likely
       roll-up**. Don't put Story Points on sub-tasks.
-      **The team's verified sub-task pattern** (mirror it): the impl + test work units, plus a
-      **`[role] Review code`** sub-task, a **`[QA]` verify** sub-task (label `QAQC`) where there's manual
-      verification, and — **mandatory on every ticket** — a **`[role] Resolve feedback merge request`**
-      sub-task that absorbs the ~1 MR-revision round. This **supersedes** the older "fold review/MR/verify
-      into impl, don't create sub-tasks for them" guidance — for this team they ARE their own sub-tasks.
+      **The team's verified sub-task pattern** (mirror it): the impl + test work units — **for
+      `[FE]` sub-tasks scoped to in-scope FE source (`quapp-functions-frontend`, or
+      `quapp-jupyterlab-ai-assistant-ext`'s TS/React `src/`), no separate test work unit** per the
+      frontend testing exception (`../../rules/testing.md`); fold any FE verification time into the
+      `[FE]` impl sub-task instead — plus a **`[role] Review code`** sub-task, a **`[QA]` verify**
+      sub-task (label `QAQC`) where there's
+      manual verification, and — **mandatory on every ticket** — a **`[role] Resolve feedback merge
+      request`** sub-task that absorbs the ~1 MR-revision round. This **supersedes** the older "fold
+      review/MR/verify into impl, don't create sub-tasks for them" guidance — for this team they ARE
+      their own sub-tasks.
       Prefix each summary with the discipline tag (`[BE]`/`[FE]`/`[QA]`) the team uses. Use the Jira
       duration format (`"7h"`, `"1h 30m"`, `"30m"`) — decimals like `"1.5h"` are unreliable.
    Never touch worklog or status here — sub-tasks are created in the tracker's default status (To Do);
@@ -97,8 +107,10 @@ original form — translate the prose, not the symbols.
 
 ## Estimation method
 - Decompose to work items (per repo/layer/step). Size each: **S ≈ ≤2h · M ≈ ½ day · L ≈ 1–2 days · XL → split it.**
-- Add the standing overhead: tests, each cross-repo consumer edit, migration, two-JDK build/test,
-  review + ~1 revision round. Don't fold these into a single number — list them.
+- Add the standing overhead: tests (**not** for in-scope FE source — `quapp-functions-frontend` entirely,
+  or `quapp-jupyterlab-ai-assistant-ext`'s TS/React `src/` — see the testing exception above), each
+  cross-repo consumer edit, migration, two-JDK build/test, review + ~1 revision round. Don't fold these
+  into a single number — list them.
 - Add a **contingency buffer** (~10–20%) for unforeseen work on top of the sized items — more when
   confidence is Low. Fold it into the impl + resolve-feedback items; don't make a "buffer" sub-task.
 - Roll up: **optimistic** (no surprises) / **likely** (buffer included) / **pessimistic** (unknowns bite).
@@ -166,7 +178,9 @@ Suggested next: /start-task → change-implementation
 ## Verification Checklist
 - [ ] Every acceptance criterion appears in the plan (none dropped).
 - [ ] Steps mapped to real repos/files; cross-repo consumers + migration repo accounted for.
-- [ ] Tests and review/MR included as work items, not assumed free.
+- [ ] Tests and review/MR included as work items, not assumed free — **except in-scope FE source**
+      (`quapp-functions-frontend` entirely, `quapp-jupyterlab-ai-assistant-ext`'s TS/React `src/` only),
+      which has no test-writing item per `rules/testing.md`.
 - [ ] Estimate is a range with assumptions + confidence; unknowns listed; **contingency buffer included** in likely.
 - [ ] No source-code changes made (the only writes are the ticket comment + estimate + Story Points + label + any sub-tasks).
 - [ ] Solution + plan written in Vietnamese and posted as a markdown comment on the ticket (Step 7a).

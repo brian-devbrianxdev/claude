@@ -41,6 +41,11 @@ Testing detail in `testing.md`. Release/publish flow in `git-workflow.md`.
 - **No comments and no unit tests when implementing frontend (`src/` TS/React) code.** Write
   self-explanatory code; do **not** add JSDoc, inline, or explanatory comments, and do **not** author
   new Jest specs (`src/__tests__/*.spec.ts(x)`) for frontend changes — unless the user explicitly asks.
+  The no-tests half is the project-wide FE policy in [`rules/testing.md`](../../rules/testing.md)
+  (always-loaded) — it also covers `solution-planning` estimates and `completion-audit` scoring for this
+  repo's `src/` code, not just implementation; this entry is the implementation-time restatement. It does
+  **not** cover the Python server extension (still needs pytest) or the Playwright/Galata `ui-tests/`
+  suite (still expected) — see `rules/testing.md` for the exact boundary.
 - **Only import-struct comments are allowed** — the import-grouping headers (`// libs`, `// types`,
   `// stores`, `// i18n`, `// components`, `// others`, …). Nothing else.
 - This **overrides** `AGENTS.md`'s "Add JSDoc for TypeScript" and "write tests" guidance **for frontend

@@ -33,7 +33,11 @@ assumption you're auditing against rather than guessing silently.
 For each requirement, search for implementing code AND tests:
 - grep by feature keywords, endpoint paths, class/method names, config keys, the issue key in commits.
 - Trace each criterion to concrete files (`path:line`).
-- Distinguish **implemented** vs **implemented + tested** — untested code is not "done".
+- Distinguish **implemented** vs **implemented + tested** — untested code is not "done". **Exception:
+  FE source** — per [`rules/testing.md`](../../rules/testing.md), `quapp-functions-frontend` (entire
+  repo) and `quapp-jupyterlab-ai-assistant-ext`'s TS/React `src/` code do not require new unit tests;
+  implemented-but-untested code there still scores Done. Does **not** cover that ext's Python server
+  extension or its Playwright/Galata suite — those keep the normal untested-is-Partial rule.
 
 Use the [rules/java.md](../../rules/java.md) routing table to know where things
 *should* live (controller/service/entity/config) when hunting for them.
@@ -43,7 +47,7 @@ Rate every checklist item:
 | Status | Meaning |
 |--------|---------|
 | ✅ Done | Implemented **and** covered by a passing test |
-| 🟡 Partial | Implemented but untested, incomplete, or only happy-path |
+| 🟡 Partial | Implemented but untested, incomplete, or only happy-path (untested does **not** apply to in-scope FE source — see the exception above) |
 | ❌ Missing | No evidence in the codebase |
 | ⚠️ Unknown | Can't verify (needs running app / external system / clarification) |
 
@@ -92,7 +96,8 @@ Do **not** change any code or transition the ticket — this skill only audits a
 
 ## Anti-patterns
 ❌ Trusting the ticket's status field instead of checking code.
-❌ Counting untested code as "done".
+❌ Counting untested code as "done" (except in-scope FE source — `quapp-functions-frontend` and the
+   JupyterLab ext's TS/React `src/` — where it's a rule, not an anti-pattern — see `rules/testing.md`).
 ❌ Inventing a percentage without showing which criteria back it.
 ❌ Editing code or moving the ticket — that's [/start-task](../../commands/start-task.md) /
    [/ship-task](../../commands/ship-task.md), not this audit.

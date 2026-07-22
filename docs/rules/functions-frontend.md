@@ -49,7 +49,10 @@ Testing detail in `testing.md`. Git hooks (Husky) in `git-workflow.md`.
 ## Coding style (frontend)
 - **No comments and no unit tests when implementing frontend code.** Write self-explanatory code; do
   **not** add JSDoc, inline, or explanatory comments, and do **not** author new Jest/unit tests for
-  frontend changes — unless the user explicitly asks for them.
+  frontend changes — unless the user explicitly asks for them. The no-tests half of this is the
+  project-wide policy in [`rules/testing.md`](../../rules/testing.md) (always-loaded) — it also covers
+  `solution-planning` estimates and `completion-audit` scoring, not just implementation; this entry is
+  the implementation-time restatement.
 - **Only import-struct comments are allowed** — the import-grouping headers (`// libs`, `// types`,
   `// stores`, `// hooks`, `// others`, …). Nothing else.
 - Pre-existing tests still run for verification (`yarn test`, see `testing.md`); this rule is about not

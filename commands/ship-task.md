@@ -34,6 +34,14 @@ always opus-class).
 5. **Push + MR.** Push with `-u` and open the MR via **GitLab push options** (`glab`). MR **title** =
    short description of the work; **description** = `Task: <jira-url>` only. The MR **target follows
    the confirmed branch base** (chosen at `/start-task` — never `develop` by default).
+   **`quapp-jupyterlab-ai-assistant-ext` only — version tag:** after the MR is created, create and
+   push a new version tag on the current HEAD commit to trigger the CI dev-release pipeline:
+   1. Find the latest tag: `git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+\.(dev|pre)[0-9]+$' | head -1`
+   2. Extract base (`v0.2.14`) and increment the suffix counter:
+      - MR targets `develop` → suffix `dev`, e.g. `v0.2.14.dev4` → `v0.2.14.dev5`
+      - MR targets `publish` → suffix `pre`, e.g. `v0.2.13.pre1` → `v0.2.13.pre2`
+   3. `git tag <new-tag> && git push origin <new-tag>`
+   The tag format must match `^v\d+\.\d+\.\d+(\.dev\d+|\.pre\d+|-batch\d+)?$` (the CI trigger regex).
 6. **Transition the ticket** (if MCP connected): move to the review/done state via
    `getTransitionsForJiraIssue` → `transitionJiraIssue`. Skip silently if Jira isn't available.
 7. **Log work on the matching sub-task** (if MCP connected; skip silently otherwise):

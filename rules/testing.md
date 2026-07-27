@@ -10,8 +10,11 @@ claim green if you didn't run them.
 | `quapp-ai-mcp` | `./gradlew test` | `./gradlew integrationTest` (Testcontainers, **needs Docker**) |
 | `quapp-functions-frontend` | `yarn test` (Jest; setup `tests/setupTests.jsx`, `jest.setup.ts`) | `yarn test:coverage`. **No Playwright/e2e** in this repo (no `ui-tests/`, no Playwright dep). |
 | `quapp-jupyterlab-ai-assistant-ext` | `jlpm test` (Jest) + `pytest -vv -r ap --cov quapp_jupyterlab_ai_assistant` | Playwright/Galata in `ui-tests/` |
+| `quapp-jupyterlab-s3-ext` | `jlpm test` (Jest) + `pytest -vv -r ap --cov quapp_jupyterlab_s3_bridge` | Playwright/Galata in `ui-tests/` |
 | `quapp-migration` | `./gradlew test` (Testcontainers) | — |
 | `quapp-ai-mcp-migration` | `./gradlew test` | — |
+| `qapp-common` | `python -m pytest tests/` | — |
+| `quapp-sdk-templates` | no test runner — verify each template builds via its `Dockerfile` | — |
 
 ## Notes
 - **ai-mcp** splits JPA/controller tests into the `integrationTest` task; plain `./gradlew test` excludes

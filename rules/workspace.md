@@ -18,8 +18,11 @@ Conventions that apply across **all** Quapp repos. Repo-specific detail lives in
 | `functions/quapp-functions-frontend` | n/a (Node/yarn) |
 | `ai/quapp-ai-mcp` | **Java 21** |
 | `ai/quapp-jupyterlab-ai-assistant-ext` | n/a (Python + Node) |
+| `ai/quapp-jupyterlab-s3-ext` | n/a (Python + Node) |
 | `migration/quapp-migration` | **Java 17** |
 | `migration/quapp-ai-mcp-migration` | **Java 21** |
+| `sdk/qapp-common` | n/a (Python) |
+| `sdk/quapp-sdk-templates` | n/a (Python + JS + Q#) |
 
 `Quapp.code-workspace` configures JavaSE-17 + JavaSE-21 (21 is the IDE default; terminal `JAVA_HOME`
 points at openjdk@21). Match the repo's JDK when building from a terminal.

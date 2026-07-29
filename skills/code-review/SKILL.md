@@ -35,8 +35,10 @@ prompt: "<lens name(s) + lens reference path(s) + file list/diff>")`, then merge
 the single ranked table. **Spawn ONE deep-reviewer carrying all deep lenses that apply — including
 the security checklist when security-review is also needed on the same diff** (each extra agent
 re-reads the whole diff, ~80-90k tokens); don't send the routine lenses with it.
-deep-reviewer has **no GitNexus access** (restricted tools) — run `impact`/`detect_changes` yourself
-first and paste the relevant output into its prompt (`../../docs/rules/gitnexus.md` rule 7).
+deep-reviewer has **no GitNexus access** (restricted tools) — running `impact`/`detect_changes`
+yourself first and pasting the relevant output into its prompt is **mandatory**, not optional
+(`../../docs/rules/gitnexus.md` rule 7): an evaluator without graph evidence can only produce
+opinions ("this looks unused"), not verifiable findings.
 
 ## Default flow (review a diff before MR)
 1. **Detect scope** — `git status` / `git diff` (or `git diff <base>...`) in the changed repo(s);
@@ -47,8 +49,10 @@ first and paste the relevant output into its prompt (`../../docs/rules/gitnexus.
 2. **Run the relevant lenses** from the table — always correctness + project-rules on a diff; add
    concurrency/performance/api-contract/architecture only if the change touches them.
 3. **Cross-tier contract sync** — no codegen exists; a backend/ai-mcp DTO or route change with no
-   matching frontend/ext consumer edit is a finding (see project-rules.md). GitNexus graphs are
-   per-repo and **cannot** see this — a clean single-repo `impact` is not proof of cross-tier safety.
+   matching frontend/ext consumer edit is a finding (see project-rules.md). Check the `quapp` group's
+   Contract Registry first (`../../docs/rules/gitnexus.md` — deterministic route↔consumer lookup for
+   the ~95 linked endpoints); anything outside it stays a manual check, and a clean single-repo
+   `impact` is never proof of cross-tier safety.
 4. **Rank findings** at `file:line` with a concrete fix; mark uncertain ones *Unknown / needs confirmation*.
 
 ## Output
@@ -60,6 +64,12 @@ Gate: PASS | CHANGES REQUESTED
 
 ## Rules
 - Read-only; never invent issues — cite a rule/lens + `file:line`.
+- **Ground structural claims in the graph** — any finding that asserts a caller/consumer/dependency
+  relationship ("nothing else calls X", "this breaks Y", "Z is the only consumer") must carry
+  evidence from a GitNexus query (`impact`/`context`/`trace`/`detect_changes` — or `group impact`/
+  `group contracts` for cross-repo, see `../../docs/rules/gitnexus.md`) or an explicit grep + read,
+  confirmed at `file:line`. Without that evidence, report it as *Unknown / needs confirmation*, not
+  as a finding.
 - One repo at a time; match its JDK (`../../rules/workspace.md`). Two DBs (`migration.md`).
 - Defer security depth to [security-review](../security-review/SKILL.md); deep standards policy lives
   in [`../../rules/java.md`](../../rules/java.md).

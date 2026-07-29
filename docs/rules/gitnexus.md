@@ -43,14 +43,38 @@ Full tool reference + workflows live in the **global `gitnexus-*` skills** (`git
 `gitnexus-exploring`, `gitnexus-debugging`, `gitnexus-impact-analysis`, `gitnexus-refactoring`,
 `gitnexus-cli`) — load the one matching the task.
 
-## Cross-repo caveat (important in this workspace)
+## Cross-repo: the `quapp` group + Contract Registry (what it can and cannot do)
 
-Each graph stops at its repo boundary. **A frontend→backend or ext→ai-mcp contract is invisible to a
-single-repo `impact`/`trace` call** — no multi-repo group is configured (`group_list` is empty), so
-cross-tier contract sync remains a **manual check** per `workspace.md` ("no generated client").
-GitNexus helps per side: `route_map`/`api_impact` on the provider repo, `query`/`context` on the
-consumer repo — then reconcile by hand. Never let a clean single-repo `impact` result be claimed as
-proof that a DTO/route change is safe across tiers.
+Each per-repo graph still stops at its repo boundary, but a **GitNexus group `quapp`**
+(`~/.gitnexus/groups/quapp/`) now links `platform/backend` (= quapp-functions-backend),
+`platform/frontend` (= quapp-functions-frontend) and `ai/mcp` (= quapp-ai-mcp) through a
+**Contract Registry** (`contracts.json`): every extracted HTTP provider route (backend ~200,
+ai-mcp 4) plus frontend consumer links, cross-linked with provenance down to the provider method's
+`file:line`.
+
+**How the frontend side works (and its limit):** GitNexus's built-in TS consumer detection only
+recognizes `axios`/`fetch`, so the UmiJS `request` wrapper yields zero auto-detected consumers.
+The consumer side is instead **generated** by
+[`scripts/sync-contract-links.py`](../../scripts/sync-contract-links.py), which matches
+`src/constants/endpoints/index.ts` against the extracted provider routes and writes manifest
+`links:` into `group.yaml` (~95/150 endpoints exact-match; the rest build URLs dynamically at call
+sites and stay manual).
+
+| Question | Works? | How |
+|----------|--------|-----|
+| "Who serves `GET /v1/users/{id}`?" (route → provider method `file:line`) | ✅ | `group contracts quapp` / `group_list`+`contracts.json`, or `route_map`/`api_impact` on the provider repo |
+| "Does the frontend consume this route at all?" | ✅ for the ~95 registry-linked endpoints | cross-link in `contracts.json` names the frontend endpoint constant path |
+| "Which frontend components/hooks break?" (consumer-side symbol fan-out) | ❌ | manifest consumers are synthetic nodes — `group impact` reports the frontend as `truncated` instead of fanning out. Grep the endpoint constant in `src/constants/endpoints/index.ts` and trace its uses with the frontend repo's own `context`/`impact` |
+| ext↔ai-mcp, WS/STOMP/SSE contracts, the ~55 dynamic-URL endpoints | ❌ | manual check per `workspace.md`, unchanged |
+
+**Maintenance:** after `analyze` on any member repo, re-run
+`python3 .claude/scripts/sync-contract-links.py` then `gitnexus group sync quapp`
+(check `group status quapp` for staleness). The script is idempotent.
+
+**The rule stands:** never let a clean single-repo `impact` result — or a registry miss on a
+dynamic-URL endpoint — be claimed as proof that a DTO/route change is safe across tiers. The
+registry upgrades a subset of the manual check into a deterministic lookup; everything outside it
+remains manual.
 
 ## Rules
 
@@ -60,12 +84,19 @@ proof that a DTO/route change is safe across tiers.
    re-analyze after switching branches — an index built on another branch silently lies.
 3. GitNexus output is **evidence to verify, not proof**: confidence-tagged edges can be wrong; confirm
    at `file:line` by reading the code before reporting a finding (matches the code-review rule).
-4. Cross-tier impact is out of graph scope — see the caveat above; keep the manual contract-sync check.
+4. Cross-tier impact: check the `quapp` group's Contract Registry first (see above); anything the
+   registry doesn't cover keeps the manual contract-sync check.
 5. `rename` proposes edits — review them like any diff (approval gate in `change-implementation` still
    applies; no source edits before plan approval).
 6. Don't run `analyze` mid-flight of someone else's long task, and never at the workspace root — always
    inside one repo.
 7. **Subagents with a restricted `tools:` list cannot call GitNexus MCP tools** — `deep-reviewer` and
    `drafter` (Read/Grep/Glob/Bash only) have no graph access, and the CLI has no query commands. When
-   spawning them, run `impact`/`detect_changes`/`trace` in the orchestrator first and paste the relevant
-   output into the prompt. Workflow agents (default type) *can* load GitNexus tools via ToolSearch.
+   spawning them, running `impact`/`detect_changes`/`trace` in the orchestrator first and pasting the
+   relevant output into the prompt is **mandatory** (a reviewer without graph evidence produces
+   opinions, not verifiable findings). Workflow agents (default type) *can* load GitNexus tools via
+   ToolSearch.
+8. **Ground evaluator claims in the graph** — a review/audit finding that asserts a structural
+   relationship ("nothing calls X", "this breaks Y", "ticket A and B collide on Z") must cite a graph
+   query result or an explicit grep + read confirmed at `file:line`; otherwise report it as
+   *Unknown / needs confirmation*. (Mirrored in `code-review` and `completion-audit`.)

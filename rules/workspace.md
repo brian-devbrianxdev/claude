@@ -99,8 +99,9 @@ points at openjdk@21). Match the repo's JDK when building from a terminal.
 ## Code navigation — GitNexus first
 All 6 repos have a GitNexus knowledge-graph index (per-repo `.gitnexus/`). For "where does X live",
 "what calls this", "what breaks if I change it", prefer the graph tools over blind grep — see
-[gitnexus.md](../docs/rules/gitnexus.md) for the tool-per-phase table, freshness rules, and the cross-repo caveat
-(single-repo graphs can't see frontend↔backend↔ai-mcp contracts — that sync check stays manual).
+[gitnexus.md](../docs/rules/gitnexus.md) for the tool-per-phase table, freshness rules, and the
+`quapp` cross-repo group's Contract Registry (route↔consumer lookups for ~95 linked endpoints;
+everything it doesn't cover — dynamic URLs, WS/STOMP/SSE, ext↔ai-mcp — stays a manual sync check).
 
 ## Recommended first files to read for a new task
 - **Backend/platform**: `functions-backend.md` → `QuaOApplication.java` → relevant `controller/<domain>/`

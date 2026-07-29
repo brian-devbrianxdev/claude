@@ -31,7 +31,13 @@ on an unrelated diff.
 ## Real anti-patterns to check for (illustrative — verify against the actual diff, don't assume)
 
 These recur across Spring Boot codebases regardless of the specific package convention chosen; treat
-them as a checklist, and cite the actual file/class you found violating it, not the example below:
+them as a checklist, and cite the actual file/class you found violating it, not the example below.
+**Ground each structural claim before reporting it**: cross-domain reach-through, god-class blast
+radius, and "unused/only-consumer" assertions are exactly what GitNexus answers deterministically —
+run `context` (who calls this), `impact` (what depends on it), or `trace` (how A reaches B) per
+[`docs/rules/gitnexus.md`](../../docs/rules/gitnexus.md) and confirm at `file:line`; an architecture
+finding backed by neither a graph query nor an explicit grep + read is an opinion, and goes out as
+*Unknown / needs confirmation* instead:
 
 | Anti-pattern | What it looks like | Why it matters | What to recommend instead |
 |---|---|---|---|
@@ -93,6 +99,8 @@ ask for the rationale to be captured in the MR/PR description instead.
 - [ ] New code in a domain that already has an established convention (versioning, layering style)
       follows it rather than inventing a new one.
 - [ ] Cross-cutting/contract-breaking changes have a rationale captured somewhere durable.
+- [ ] Every dependency-direction / caller-consumer claim in the findings carries graph or grep+read
+      evidence at `file:line` (see the grounding note above) — none is asserted from memory.
 
 ## Analysis commands
 

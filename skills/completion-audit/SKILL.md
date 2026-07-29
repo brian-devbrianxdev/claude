@@ -91,7 +91,8 @@ One agent per ticket. Each agent:
   [rules/java.md](../../rules/java.md) routing table and `.claude/rules/*.md` to
   know where things should live. Prefer GitNexus (`query`/`context`/`impact` — load via ToolSearch;
   see [docs/rules/gitnexus.md](../../docs/rules/gitnexus.md)) over grep to find implementing symbols and to
-  fill `filesTouched[].symbols`; the graph is per-repo, so `contracts[]` cross-tier mapping stays manual.
+  fill `filesTouched[].symbols`; for `contracts[]`, the `quapp` group's Contract Registry resolves
+  route↔consumer for the linked endpoints — everything it doesn't cover stays manual.
 - Scores each requirement ✅ Done / 🟡 Partial / ❌ Missing / ⚠️ Unknown and computes the ticket's
   completion % (Done=1.0, Partial=0.5, Missing=0; Unknown excluded from denominator, reported separately).
 - Records its **footprint** — the raw material for conflict detection:
@@ -135,6 +136,19 @@ Classify each finding:
 | 🔴 Conflict | Will break at build/runtime or silently corrupt behavior if both ship as-is |
 | 🟠 Risk | Co-located / overlapping; needs a deliberate merge decision but not inherently broken |
 | 🟢 Clear | Footprints overlap by path only, logically independent |
+
+**Ground every 🔴 before it reaches the report.** The synthesis agent reasons over footprint JSON —
+its verdicts are hypotheses, not facts. The orchestrator must verify each 🔴 with a targeted check:
+- *same-file / same-symbol* → GitNexus `impact`/`context` on the contested symbol + read the actual
+  lines both tickets touch;
+- *cross-repo contract* → `api_impact`/`route_map` on the provider side (and `group contracts`/
+  `group impact` on the `quapp` group when the contested route is cross-linked there — see
+  [`docs/rules/gitnexus.md`](../../docs/rules/gitnexus.md)), then confirm the consumer at `file:line`;
+- *config/auth* → read both tickets' actual edits to the key.
+
+A 🔴 that survives verification is reported with its evidence attached. One that can't be verified
+is **downgraded to 🟠 with an explicit ⚠️ "unverified — needs human check" note** — never silently
+kept at 🔴 on the synthesis agent's word alone.
 
 ### Step 4 — Release verdict
 Aggregate:
@@ -193,6 +207,8 @@ Then: the per-ticket evidence tables on request. **No code changes, no ticket tr
 - [ ] Release marked complete only if **every** ticket is 100%.
 - [ ] Cross-repo contracts, shared config/auth, and same-file edits each checked across all ticket pairs.
 - [ ] Each conflict has both tickets, the exact location, and why; severity assigned.
+- [ ] Every 🔴 conflict was verified by a graph query or direct file read (evidence attached);
+      unverifiable ones downgraded to 🟠 + ⚠️, not reported as fact.
 - [ ] Go/No-Go stated with the math behind it.
 
 ## Anti-patterns
@@ -308,7 +324,9 @@ return { tickets, footprints, conflicts, validation }
 ```
 After the workflow returns, first check `validation` — any footprint with problems (mis-computed %,
 ✅ criteria without `path:line` evidence) is untrusted: use the `computed` % instead and flag the
-ticket ⚠️ in the report. Then build the Output Contract report from `footprints` + `conflicts`,
+ticket ⚠️ in the report. Next, **ground every 🔴 in `conflicts.findings`** per Step 3's verification
+list (graph query / file read; downgrade unverifiable ones to 🟠 + ⚠️ note) — the Go/No-Go must rest
+only on verified conflicts. Then build the Output Contract report from `footprints` + `conflicts`,
 compute the release completeness %, and state Go/No-Go. For each gap (🟡/❌/⚠️) and each 🔴/🟠 conflict, write a minimal
 plan item routed through [rules/java.md](../../rules/java.md) gate
 (branch from the confirmed base, tests mandatory, self-review before MR). Close the gap; don't gold-plate.

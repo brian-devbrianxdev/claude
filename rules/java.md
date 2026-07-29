@@ -26,16 +26,16 @@ package-by-feature rewrite without a concrete driver — see the decision framew
 `java-architecture-enforcement.md`.
 
 ## Phase 2 — While writing
-- **No redundant comments.** Write self-explanatory code (intention-revealing names, small methods).
-  Do not add comments that restate what the code does. A comment is allowed only when it explains
-  something that cannot be made clear through naming or decomposition:
-  - a non-obvious business or concurrency invariant
-  - a deliberate workaround with a reference (ticket, vendor bug, spec clause)
-  - a security or compatibility constraint that would surprise a future reader
-  - a regex, SQL, or algorithm whose intent is genuinely non-obvious
-  Required Javadoc on public APIs and license headers are always allowed.
-  Machine-read annotations (`@Override`, etc.) are not comments.
-  (Frontend/JupyterLab TS: same rule — no restating-what-the-code-does comments.)
+- **Comment policy** — full 15-rule standard is in [`java-comment-rules.md`](java-comment-rules.md).
+  Core principle: **code explains WHAT, comments explain WHY, Javadoc explains CONTRACT**.
+  Quick checklist:
+  - ❌ Never restate what the code already says (Rule 6, 13)
+  - ❌ Never leave commented-out code (Rule 9)
+  - ❌ TODO/FIXME must carry a PQF key and be actionable (Rule 10)
+  - ✅ Explain non-obvious business rules, workarounds, constraints, edge cases (Rules 3, 4, 11, 12)
+  - ✅ Javadoc for public APIs, interfaces, non-obvious contracts (Rule 5)
+  Required license headers and `@Override` are always allowed.
+  (Frontend/JupyterLab TS: same rules apply.)
 - Keep methods small; respect single responsibility and dependency direction (code-craft).
 - Strict layering: **JPA entities never leave the repository layer** (`workspace.md`).
 - Structured, MDC-aware logging (spring-stack-patterns, logging section).

@@ -13,6 +13,9 @@ reference files loaded only when their section is needed.
 - **GitNexus** (knowledge-graph navigation: which MCP tool per phase, freshness, cross-repo caveat) →
   [`../docs/rules/gitnexus.md`](../docs/rules/gitnexus.md). Usage lives **only** there; task-scoping,
   bug-investigation, code-review, and change-implementation link back to it.
+- **Ticket-lifecycle graph** (how the 4 commands + 16 skills map onto named workflow nodes, routing
+  conditions, retry bounds, and the per-ticket run state) → [`../graph/README.md`](../graph/README.md).
+  Purely additive coordination metadata — it does not change any skill's own instructions.
 - Skills are named by **capability**, not project or tool — all project specifics live in the profile
   and rules, so the set is portable to another project by swapping those.
 

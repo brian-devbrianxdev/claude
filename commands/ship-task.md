@@ -29,9 +29,16 @@ always opus-class).
    `bash .claude/skills/security-review/secret-scan.sh <repo-dir>` (from the workspace root). Exit 1
    (any BLOCKER line) is a commit blocker — fix or move the secret to env/Secrets Manager first;
    WARN lines get a human judgment call in the summary.
-4. **Commit.** Use the **`commit`** skill (conventional format). The PQF key (from `$ARGUMENTS` or the
+4. **Update graph run state (best-effort, non-fatal).** If `.claude/state/<key>.json` exists (from
+   `/start-task`, per [`../graph/README.md`](../graph/README.md)), append this run's
+   `test_results[]`/`findings[]`/`evidence[]` from steps 1–3 and set `phase: ship`. If the STOP gate
+   above is red, set `final_status: blocked` and stop here — do not proceed to commit. If it's clear,
+   set `human_approval.ship_approved` once the user's explicit go-ahead to commit is given (not
+   before). Missing `jq`/file/directory is non-fatal — note it once and continue with the rest of
+   this command exactly as it already works without a state file.
+5. **Commit.** Use the **`commit`** skill (conventional format). The PQF key (from `$ARGUMENTS` or the
    branch name) **must be in the footer**.
-5. **Push + MR.** Push with `-u` and open the MR via **GitLab push options** (`glab`). MR **title** =
+6. **Push + MR.** Push with `-u` and open the MR via **GitLab push options** (`glab`). MR **title** =
    short description of the work; **description** = `Task: <jira-url>` only. The MR **target follows
    the confirmed branch base** (chosen at `/start-task` — never `develop` by default).
    **`quapp-jupyterlab-ai-assistant-ext` only — version tag:** after the MR is created, create and
@@ -42,9 +49,11 @@ always opus-class).
       - MR targets `publish` → suffix `pre`, e.g. `v0.2.13.pre1` → `v0.2.13.pre2`
    3. `git tag <new-tag> && git push origin <new-tag>`
    The tag format must match `^v\d+\.\d+\.\d+(\.dev\d+|\.pre\d+|-batch\d+)?$` (the CI trigger regex).
-6. **Transition the ticket** (if MCP connected): move to the review/done state via
+   If state was updated in step 4, record the MR URL in `evidence[]` and set
+   `final_status: shipped_pending_human`.
+7. **Transition the ticket** (if MCP connected): move to the review/done state via
    `getTransitionsForJiraIssue` → `transitionJiraIssue`. Skip silently if Jira isn't available.
-7. **Log work on the matching sub-task** (if MCP connected; skip silently otherwise):
+8. **Log work on the matching sub-task** (if MCP connected; skip silently otherwise):
    a. **Pick the discipline** from the repo(s) actually touched: `quapp-functions-frontend` /
       JupyterLab-ext TS → **`[FE]` / label `Frontend`**; Java services + migration repos →
       **`[BE]` / label `Backend`**. Both tiers → log each side on its own sub-task.
@@ -59,9 +68,11 @@ always opus-class).
    d. **Log the time**: `addWorklogToJiraIssue` on the sub-task with the time actually spent, Jira
       duration format (`"2h"`, `"1h 30m"` — no decimals). **Confirm the amount with the user first**
       unless they already stated it — never invent hours.
-8. **Summarize.** Files/repos touched, test results, MR link, ticket state, work logged (sub-task +
-   time), and any cross-repo consumer follow-ups still owed.
+9. **Summarize.** Files/repos touched, test results, MR link, ticket state, work logged (sub-task +
+   time), and any cross-repo consumer follow-ups still owed. If state was updated, set
+   `final_status: done`.
 
 ## Output
 A reviewed, tested, committed, pushed change with an MR to the correct target, an updated ticket with
-work logged on the right `[BE]`/`[FE]` sub-task, plus a short ship summary.
+work logged on the right `[BE]`/`[FE]` sub-task, a short ship summary, and (best-effort) a
+`.claude/state/<key>.json` reflecting the finished run.

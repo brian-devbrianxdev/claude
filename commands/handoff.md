@@ -19,7 +19,9 @@ Save it **outside the repos** — `~/.claude/projects/-Users-ngohoangkhactuong-Q
   file paths (`repo/path:line`). The doc is the index; the artifacts are the content.
 - **Quapp context the next session always needs**: ticket key + confirmed branch base, repo(s)
   touched + current branch of each (`git branch --show-current`), test status per repo (real
-  results), and any cross-repo contract follow-up still owed.
+  results), and any cross-repo contract follow-up still owed. If `.claude/state/<key>.json` exists
+  (see [`../graph/README.md`](../graph/README.md)), link to it rather than re-deriving the same
+  facts — the doc is the index, the state file is one more artifact it points at, not content to copy.
 - **Suggested skills/commands** section: which of this workspace's skills the next session should
   invoke (e.g. resume with `change-implementation`, close with `/ship-task PQF-…`, review someone's
   MR with `/review-mr`).

@@ -1,0 +1,162 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://quapp.internal/claude/graph/task-state.schema.json",
+  "title": "Task state",
+  "description": "Per-ticket durable run ledger for the graph workflow layer. Stored at .claude/state/<TASK_ID>.json, git-ignored, machine-local, best-effort. Not a replacement for the Jira ticket (source of truth) or /handoff (cross-session narrative) — see graph/README.md.",
+  "type": "object",
+  "required": ["task_id", "phase", "final_status", "created_at", "updated_at"],
+  "additionalProperties": false,
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "Ticket key, e.g. PQF-22349. May carry a discipline suffix for a tracked sub-task, e.g. PQF-22349-BE.",
+      "minLength": 1
+    },
+    "objective": {
+      "type": "string",
+      "description": "One-line restatement of the goal, mirrored from /start-task step 1. Not the full ticket body — that stays in Jira."
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "repos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "path"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "path": { "type": "string" },
+          "branch": { "type": "string" },
+          "jdk": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "workflow": {
+      "type": "string",
+      "enum": ["ticket", "bugfix", "release"],
+      "description": "Which graph/workflows/*.yaml this run followed."
+    },
+    "phase": {
+      "type": "string",
+      "enum": ["intake", "analyze", "plan", "implement", "integrate", "test", "review", "security", "release_audit", "ship", "done", "blocked"]
+    },
+    "planned_nodes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Node ids the router decided to activate for this run, decided once at analyze time."
+    },
+    "active_nodes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Normally 0 or 1 entries; more than 1 only during the implement per-repo fan-out or release_audit's per-ticket fan-out."
+    },
+    "completed_nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node", "attempt"],
+        "additionalProperties": false,
+        "properties": {
+          "node": { "type": "string" },
+          "attempt": { "type": "integer", "minimum": 1 },
+          "result_ref": { "type": "string", "description": "Pointer into evidence[] or findings[] for this node's node-result record." }
+        }
+      }
+    },
+    "blocked_nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node", "reason", "since"],
+        "additionalProperties": false,
+        "properties": {
+          "node": { "type": "string" },
+          "reason": { "type": "string" },
+          "since": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node", "decision", "timestamp"],
+        "additionalProperties": false,
+        "properties": {
+          "node": { "type": "string" },
+          "decision": { "type": "string" },
+          "rationale": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node", "type", "summary"],
+        "additionalProperties": false,
+        "properties": {
+          "node": { "type": "string" },
+          "type": { "type": "string", "description": "e.g. test-report, review-verdict, secret-scan, mr-url, commit-sha" },
+          "ref": { "type": "string", "description": "file:line, path, or URL" },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node", "severity", "summary"],
+        "additionalProperties": false,
+        "properties": {
+          "node": { "type": "string" },
+          "severity": { "type": "string", "enum": ["blocker", "major", "minor", "nit"] },
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+    "test_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["repo", "command", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "repo": { "type": "string" },
+          "command": { "type": "string" },
+          "status": { "type": "string", "enum": ["pass", "fail", "not_run"] },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+    "retries": {
+      "type": "object",
+      "description": "Map of node id -> attempt count so far. Compared against each node's maximum_attempts in graph/nodes/*.md.",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "human_approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "branch_base_confirmed": { "type": "boolean" },
+        "plan_approved": { "type": "boolean" },
+        "ship_approved": { "type": "boolean" },
+        "by": { "type": "string" },
+        "at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "final_status": {
+      "type": "string",
+      "enum": ["in_progress", "ready_to_ship", "shipped_pending_human", "blocked", "abandoned", "done"]
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" }
+  }
+}

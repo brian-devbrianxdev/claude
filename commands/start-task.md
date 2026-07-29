@@ -41,13 +41,22 @@ Reads project identity from [`../profiles/quapp/profile.md`](../profiles/quapp/p
 6. **Create the branch** from the confirmed base **inside the target repo** (`cd` into the specific
    repo first — not a monorepo). Multiple repos → create the matching branch in each, or ask which to
    start with.
-7. **Hand off.** Tell the user to proceed with **`change-implementation`** (which applies the
+7. **Initialize graph run state (best-effort, non-fatal).** Per [`../graph/README.md`](../graph/README.md),
+   decide `planned_nodes` from [`../graph/workflows/ticket.yaml`](../graph/workflows/ticket.yaml) (or
+   `bugfix.yaml` for a Bug) using `task-scoping`'s output, then write
+   `.claude/state/<parentKey>.json` per [`../graph/schemas/task-state.schema.json`](../graph/schemas/task-state.schema.json)
+   (`mkdir -p .claude/state` first — same lazy-create pattern `/handoff` uses). Seed `task_id`,
+   `objective`, `repos[]`, `workflow`, `planned_nodes`, `phase: intake`,
+   `human_approval.branch_base_confirmed: true`. If this write fails for any reason (no `jq`,
+   permissions, etc.), note it once and continue — this step never blocks the rest of the command.
+8. **Hand off.** Tell the user to proceed with **`change-implementation`** (which applies the
    `../rules/java.md` gate). Do not start editing.
 
 ## Output
 A scope summary (repo / JDK / files / contracts), the confirmed base, the In-Progress ticket (and its
-sub-task too, if one was identified in Step 1), and a created, correctly-named branch in the right
-repo — ready to implement.
+sub-task too, if one was identified in Step 1), a created, correctly-named branch in the right
+repo, and (best-effort) an initialized `.claude/state/<key>.json` graph run record — ready to
+implement.
 
 ## Token hygiene
 End the summary by recommending the user start the implementation in a **fresh session** (`/clear`)

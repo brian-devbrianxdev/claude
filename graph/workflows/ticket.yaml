@@ -1,0 +1,102 @@
+# Primary ticket-lifecycle workflow. Read by the orchestrating model at /start-task time — this is
+# a declarative document, not an executable definition; there is no engine that parses this file.
+# Node contracts (reads/writes/dependencies/bounds) live in ../nodes/<id>.md — this file only adds
+# the routing conditions and the dependency graph. See ../README.md and ../../refactor/design.md.
+
+workflow: ticket
+description: >
+  Default lifecycle for one Jira ticket, one or more repos, ending at a human-controlled ship gate.
+  Use bugfix.yaml instead when the ticket's issue type is Bug. Use release.yaml for a list of
+  tickets audited together.
+
+nodes:
+  - id: intake
+    node_contract: ../nodes/intake.md
+    always: true
+    dependencies: []
+
+  - id: analyze
+    node_contract: ../nodes/analyze.md
+    always: true
+    dependencies: [intake]
+
+  - id: plan
+    node_contract: ../nodes/plan.md
+    dependencies: [analyze]
+    when:
+      any_of:
+        - user_explicitly_requested_estimate_or_plan
+        - scope_is_large_or_ambiguous   # analyze's own judgment call, per solution-planning's trigger
+
+  - id: implement
+    node_contract: ../nodes/implement.md
+    always: true
+    dependencies: [analyze]
+    after: [plan]   # runs after plan when plan was routed in; otherwise runs right after analyze
+    fan_out:
+      by: repo
+      source: state.repos[]
+      note: >
+        Each repo is a separate git working tree (workspace.md — not a monorepo), so no
+        file-ownership overlap check is needed between fanned-out instances. Migration repos
+        must complete implement+test before their paired service repo's test node runs
+        (mirrors the real deploy order in git-workflow.md's CI table).
+
+  - id: integrate
+    node_contract: ../nodes/integrate.md
+    dependencies: [implement]
+    when:
+      all_of:
+        - repos_count_gte: 2
+        - cross_repo_contract_touched   # analyze's finding: frontend<->backend<->ai-mcp DTO/route
+
+  - id: test
+    node_contract: ../nodes/test.md
+    always: true
+    dependencies: [implement]
+    after: [integrate]   # when integrate was routed in, the consumer side must wait for it
+    when_bugfix:
+      regression_test_mandatory: true
+
+  - id: review
+    node_contract: ../nodes/review.md
+    always: true
+    dependencies: [implement]
+    after: [integrate]
+    note: "ship must not run without this node in completed_nodes with a PASS verdict or resolved Blocker/Major."
+
+  - id: security
+    node_contract: ../nodes/security.md
+    dependencies: [implement]
+    when:
+      any_of:
+        - input_handling_touched
+        - query_or_persistence_touched
+        - auth_or_jwt_or_rate_limit_touched
+    note: "secret-scan.sh still always runs at ship's STOP gate regardless of whether this node was routed in."
+
+  - id: ship
+    node_contract: ../nodes/ship.md
+    always: true
+    dependencies: [test, review]
+    dependencies_when_routed_in:
+      security: required if the security node was activated above
+    human_gate: true
+    note: "Never auto-commits or auto-pushes. See rules/java.md Phase 4 and commands/ship-task.md step 3 — unchanged by this workflow document."
+
+routing_examples:
+  # See design.md §4 for the full table this mirrors.
+  docs_only_change:
+    planned_nodes: [intake, analyze, implement, review, ship]
+    skips: [plan, integrate, test, security]
+    why: "No .java/.ts/.py/.sql touched; still one lightweight review pass, never zero review."
+  single_repo_change:
+    planned_nodes: [intake, analyze, implement, test, review, ship]
+    skips: [integrate]
+    why: "One git working tree; no cross-repo contract to sync."
+  multi_repo_feature:
+    planned_nodes: [intake, analyze, implement, integrate, test, review, "security (if triggered)", ship]
+    why: "e.g. PQF-22349 (backend) + PQF-22350 (frontend) language-C support seen live in this workspace at audit time — a shared contract requires the integrate fan-in before test."
+  security_sensitive_change:
+    planned_nodes: [intake, analyze, implement, test, review, security, ship]
+    why: "auth/input/query surface touched — security is mandatory, not conditional-skipped."

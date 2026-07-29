@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://quapp.internal/claude/graph/node-result.schema.json",
+  "title": "Node result",
+  "description": "Structured output one graph node contributes when it finishes, in addition to its normal prose response. Its fields feed into the matching task-state arrays (evidence, findings, test_results, retries) rather than being stored standalone. Mirrors what code-review/security-review/completion-audit/ship-task already say in prose today (e.g. 'Gate: PASS | CHANGES REQUESTED') — this is a JSON mirror of that, not a new reporting format to learn.",
+  "type": "object",
+  "required": ["node_id", "status", "summary", "attempt"],
+  "additionalProperties": false,
+  "properties": {
+    "node_id": {
+      "type": "string",
+      "enum": ["intake", "analyze", "plan", "implement", "integrate", "test", "review", "security", "release_audit", "ship"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["success", "failure", "blocked", "skipped"]
+    },
+    "summary": {
+      "type": "string",
+      "description": "One or two sentences — what happened."
+    },
+    "evidence": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "file:line references, command + report paths, verdict strings, MR/commit URLs."
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "summary"],
+        "additionalProperties": false,
+        "properties": {
+          "severity": { "type": "string", "enum": ["blocker", "major", "minor", "nit"] },
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Compared against the node's maximum_attempts in graph/nodes/<node_id>.md."
+    },
+    "model_tier": {
+      "type": "string",
+      "description": "From docs/rules/model-routing.md, for traceability only — that file remains the single source for the tier itself."
+    },
+    "next_action": {
+      "type": "string",
+      "description": "e.g. 'route to review', 'route to failure_route: implement', 'halt at ship STOP gate'."
+    },
+    "failure_reason": {
+      "type": "string",
+      "description": "Required in practice (not schema-enforced, since a human may still want partial detail) when status is failure or blocked."
+    }
+  }
+}

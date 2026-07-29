@@ -1,0 +1,44 @@
+# Release-audit workflow. A list of tickets, not one — read-only end to end, no ship node exists
+# in this workflow (auditing a release does not ship it; each ticket ships through ticket.yaml or
+# bugfix.yaml on its own). See ../nodes/release-audit.md for the full contract.
+
+workflow: release
+description: >
+  Use for "audit the release", "release readiness check", or a pasted list of PQF tickets to
+  verify before a release — never for a single ticket (use ticket.yaml/bugfix.yaml instead).
+
+nodes:
+  - id: release_audit
+    node_contract: ../nodes/release-audit.md
+    always: true
+    dependencies: []
+    note: >
+      Assumes every ticket in the list already went through implement+test+review on its own
+      ticket.yaml/bugfix.yaml run — this workflow does not implement or re-review anything itself,
+      it verifies completeness and cross-ticket conflicts against what already landed.
+    fan_out:
+      by: ticket
+      source: input_ticket_list
+      condition_for_parallel_workers:
+        any_of:
+          - ticket_count_gte: 4
+          - distinct_repos_touched_gte: 2
+      worker_model_tier: sonnet
+      fan_in:
+        step: cross_ticket_conflict_synthesis
+        model_tier: opus
+        checks:
+          - same_file_overwrites_across_tickets
+          - broken_cross_repo_contract_between_tickets
+          - clashing_shared_config_or_auth_changes
+
+outputs:
+  - per_ticket_verdict   # done | partial | not_done, with reasons — mirrors single-ticket.md's ✅🟡❌⚠️ scale
+  - cross_ticket_conflict_report
+  - go_no_go_recommendation   # a recommendation for the human; this workflow never ships anything itself
+
+forbidden_actions:
+  - editing code in any audited repo
+  - transitioning any Jira ticket
+  - leaving a repo checked out on develop after the audit (release-audit.md requires reverting to
+    the original branch/stash, matching completion-audit's existing Step 0 contract)

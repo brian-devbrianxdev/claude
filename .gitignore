@@ -15,6 +15,7 @@ session-env/
 file-history/
 paste-cache/
 ide/
+state/
 
 # --- Local snapshots ---
 backups/

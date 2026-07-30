@@ -9,9 +9,10 @@ Audit ticket **completeness** against the codebase — for a **single ticket** (
 per-ticket logic lives in [single-ticket.md](single-ticket.md)) or a **whole release** (an explicit
 list of tickets), where it additionally proves the tickets are **conflict-free**.
 
-**Mode:** 1 ticket → run the per-ticket audit only, skip the conflict pass. ≥2 tickets → fan out one
-per-ticket audit each (parallel) + one cross-ticket conflict pass. For a release list, prove two
-things with codebase evidence:
+**Mode:** 1 ticket → run the per-ticket audit only (single-ticket.md, including **its own Step 0
+repo sync** — the sync-to-`develop`-first requirement applies in both modes, not just release mode),
+skip the conflict pass. ≥2 tickets → fan out one per-ticket audit each (parallel) + one cross-ticket
+conflict pass. For a release list, prove two things with codebase evidence:
 
 1. **Completeness** — every ticket's requirements are 100% implemented **and** tested.
 2. **Conflict-free** — no two tickets collide: same-file overwrites, broken cross-repo contracts, or
@@ -27,6 +28,9 @@ Read-only. **Never edits code, never transitions tickets.** It audits, scores, a
 ## Prerequisites
 - Atlassian MCP available (`getJiraIssue`, `searchJiraIssuesUsingJql`) for ticket text. If a ticket key
   can't be fetched, mark it **⚠️ Unknown** and audit what's reachable — don't invent criteria.
+  Pass the site hostname (e.g. `citynow-org.atlassian.net`) as `cloudId` directly; don't
+  `ToolSearch`/call `getAccessibleAtlassianResources` unless the hostname call actually fails —
+  loading a schema you never call is wasted context.
 - Read access to all six repos (see root `CLAUDE.md` → Repository Map).
 - **Input = explicit ticket list.** The user supplies the keys (e.g. `PQF-21017 PQF-21432 PQF-21500`).
   Do not derive the set from a Fix Version or git history unless the user asks.
@@ -71,6 +75,14 @@ Ticket-specific `feature/*`/`bugfix/*` branches are still inspected from this `d
 `git log <branch>`, `git diff develop..<branch>`, `git show <branch>:<path>` — **without** checking
 them out — so Step 2's parallel per-ticket agents never need to mutate the working tree themselves.
 
+**Ancestry is not proof of merge status.** `git merge-base --is-ancestor <branch> develop` can say
+"not merged" even when the branch's code is fully on `develop` already — via a GitLab squash-merge
+(observed in `quapp-functions-frontend`) or a duplicate/parallel commit with the same content pushed
+under a different SHA (observed in `sdk/qapp-common`, `sdk/quapp-sdk-templates`, and
+`functions-backend`). Always confirm with `git diff develop...<branch> -- <path>` — an empty diff
+means the content already shipped; don't score it ❌/🟡 or report it as an unmerged conflict based on
+ancestry alone. See [single-ticket.md](single-ticket.md) Step 0 for the same rule spelled out per-repo.
+
 **After** the release verdict (Step 4) has been reported, restore every repo you switched:
 `git checkout <original branch>` (and `git stash pop` if you stashed one). Never leave a repo sitting
 on `develop` when the audit started elsewhere — this skill is read-only and must not change what
@@ -84,6 +96,13 @@ requirements after the description was written, and the audit must score against
 spec (latest comment usually wins; unresolved questions become ⚠️ Unknown criteria). Note issue type
 (a Bug's criterion is *defect no longer reproduces + regression test*), linked subtasks, and the issue
 key (for grepping branches/commits). Restate each ticket's goal in one line so the user can confirm scope.
+
+**Only audit code vs. requirement — filter subtasks down to code-implementation ones.** A story's
+subtasks normally mix real dev work with the fixed trailing lifecycle pattern `solution-planning`
+always appends: `[QA] Verify: ...`, `[BE]/[FE] Review code`, `[BE]/[FE] Resolve feedback merge
+request`. These are process subtasks, not requirements — never decompose them into criteria, and
+never let their Jira status gate a *code* requirement's score (see [single-ticket.md](single-ticket.md)
+Step 1 for the full rule). Only `[BE]`/`[FE]` implementation subtasks are in scope for evidence.
 
 ### Step 2 — Fan out: per-ticket completeness audit (parallel)
 One agent per ticket. Each agent:
@@ -183,9 +202,19 @@ Verdict: NO-GO   (completeness 88%, 1 ticket < 100%; 🔴 2 conflicts, 🟠 1 ri
 Then: the per-ticket evidence tables on request. **No code changes, no ticket transitions.**
 
 ## Rules Claude Must Follow
-- **Sync every relevant repo to latest `develop` before evidence-gathering** (Step 0), sequentially,
-  with git-status/stash safety; restore each repo's original branch (and stash) once the verdict is
-  reported. Never leave a repo switched to `develop` after the audit ends.
+- **Only audit code vs. requirement, scoped to code-implementation subtasks.** Filter out process/
+  lifecycle subtasks — `[QA] Verify: ...`, `[BE]/[FE] Review code`, `[BE]/[FE] Resolve feedback merge
+  request` (the standard `solution-planning` trailing pattern) — from the requirement checklist and
+  from evidence scope. Their Jira status never gates a code requirement's ✅/🟡/❌; report it as
+  context only. See [single-ticket.md](single-ticket.md) Step 1 for the full rule.
+- **Sync every relevant repo to latest `develop` before evidence-gathering** (Step 0) — in **both**
+  single-ticket and release mode — sequentially, with git-status/stash safety; restore each repo's
+  original branch (and stash) once the verdict is reported. Never leave a repo switched to `develop`
+  after the audit ends.
+- **Never call a ticket branch "unmerged" or a requirement missing from `git merge-base
+  --is-ancestor` alone** — squash-merges and duplicate/parallel commits break ancestry while the
+  content already shipped; confirm with a content diff (`git diff develop...<branch> -- <path>`)
+  before scoring or reporting a gap.
 - **Read-only**; cite real `path:line`. Mark anything unverifiable **⚠️ Unknown**, never invent.
 - **Not a monorepo** — name the specific repo for every file/contract/migration (`workspace.md`).
 - Untested code is **🟡 Partial**, not Done — **except in-scope FE source** (`quapp-functions-frontend`
@@ -201,9 +230,14 @@ Then: the per-ticket evidence tables on request. **No code changes, no ticket tr
 
 ## Verification Checklist
 - [ ] Every relevant repo was synced to latest `develop` before evidence-gathering (Step 0, sequential,
-      stash-safe) and restored to its original branch afterward.
-- [ ] Every supplied ticket was fetched (or flagged ⚠️ Unknown) and decomposed into atomic requirements.
+      stash-safe) and restored to its original branch afterward — single-ticket mode included.
+- [ ] Any branch that looked "unmerged" via `git merge-base --is-ancestor` was double-checked with a
+      content diff before being scored as a gap or reported as an unmerged conflict.
+- [ ] Every supplied ticket was fetched (or flagged ⚠️ Unknown) and decomposed into atomic requirements,
+      excluding `[QA] Verify`/`Review code`/`Resolve feedback merge request` process subtasks.
 - [ ] Each requirement traced to code **and** test, or marked ❌/🟡/⚠️ with a reason.
+- [ ] No requirement was downgraded solely because a QA/E2E, review, or resolve-feedback-MR subtask
+      hadn't completed — only code-level evidence gates the score.
 - [ ] Release marked complete only if **every** ticket is 100%.
 - [ ] Cross-repo contracts, shared config/auth, and same-file edits each checked across all ticket pairs.
 - [ ] Each conflict has both tickets, the exact location, and why; severity assigned.
@@ -214,7 +248,11 @@ Then: the per-ticket evidence tables on request. **No code changes, no ticket tr
 ## Anti-patterns
 ❌ Trusting ticket status; ❌ counting untested code as done outside the in-scope-FE-source exception
 (`rules/testing.md`); ❌ averaging % and calling 88% "done" when a ticket is at 60%; ❌ checking
-only same-file edits and missing a broken cross-repo contract; ❌ editing code or moving tickets. ✅
+only same-file edits and missing a broken cross-repo contract; ❌ editing code or moving tickets;
+❌ calling a branch "unmerged"/a requirement "missing" from `git merge-base --is-ancestor` alone
+without a content diff (squash-merges and duplicate commits break ancestry, not content); ❌ treating
+a `[QA] Verify`/`Review code`/`Resolve feedback merge request` subtask as a requirement, or its To Do
+status as a reason to downgrade code that's actually implemented. ✅
 Evidence-linked statuses, pairwise conflict checks, transparent Go/No-Go.
 
 ## Workflow script template
@@ -271,13 +309,19 @@ const footprints = (await parallel(tickets.map(t => () =>
     `or switch branches yourself; inspect feature/bugfix branches read-only via git log/diff/show against ` +
     `refs (e.g. git log <branch>, git diff develop..<branch>, git show <branch>:<path>).\n` +
     `1) getJiraIssue ${t}; build a flat checklist of atomic requirements (a Bug = defect no longer ` +
-    `reproduces + regression test).\n` +
+    `reproduces + regression test). Filter subtasks to code-implementation ([BE]/[FE] dev deliverable) ` +
+    `ones only — ignore [QA] Verify/E2E, [BE]/[FE] Review code, and [BE]/[FE] Resolve feedback merge ` +
+    `request subtasks entirely: don't turn them into criteria, and don't let their Jira status (To Do/ ` +
+    `In Progress/Review) gate a code requirement's score — report their status as context only.\n` +
     `2) For each requirement, find implementing code AND tests across all six repos (cite repo:path:line). ` +
     `Use .claude/rules/*.md to know where things live. Untested code is 🟡 Partial, not Done — EXCEPT ` +
     `in-scope FE source (quapp-functions-frontend entirely, and quapp-jupyterlab-ai-assistant-ext's ` +
     `TS/React src/ code only — NOT its Python server extension or Playwright/Galata suite), which per ` +
     `rules/testing.md does not require new unit tests; score implemented-but-untested code there as ` +
-    `Done, not Partial.\n` +
+    `Done, not Partial. For a repo with no automated test runner (e.g. quapp-sdk-templates, whose only ` +
+    `stated verification is a live Docker build), score on careful code-reading against the contract — ` +
+    `don't require that live build/deploy/invoke to have actually run; that belongs to the excluded QA ` +
+    `subtask, not this audit.\n` +
     `3) Score ✅/🟡/❌/⚠️ and compute completionPct (Done=1, Partial=.5, Missing=0; exclude Unknown).\n` +
     `4) Record the footprint: every file touched, every cross-repo contract (dto/endpoint/ws/sse/stomp) ` +
     `changed, every shared config/auth key touched (security/jwt/rate-limit/env/yaml/constants), and any ` +

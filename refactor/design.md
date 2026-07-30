@@ -109,7 +109,7 @@ metadata (bounds, evidence requirement), not a rewrite of the skill's logic.
 |---|---|---|
 | `intake` | `/start-task` steps 1–2 | evidence_required: ticket key or pasted text captured in state |
 | `analyze` | `task-scoping` | maximum_attempts: 1 (read-only, no retry concept applies) |
-| `plan` | `solution-planning` (conditional — see §4) | failure_route: back to `analyze` if scope was wrong |
+| `plan` | `solution-planning` (**mandatory**, standing user directive 2026-07-30 — skipped only when the unit is a sub-task already planned by a prior run; see §4) | failure_route: back to `analyze` if scope was wrong |
 | `implement` | `change-implementation`, fanned out per repo when multi-repo | maximum_attempts: 2 per repo, then `blocked` → human |
 | `integrate` | manual cross-repo contract-sync check (`workspace.md` — "no codegen does it for you") | evidence_required: explicit confirmation both sides of a touched DTO/route were updated |
 | `test` | per-repo commands in `rules/testing.md` | failure_route: back to `implement` (same repo only), maximum_attempts: 3, then `blocked` |
@@ -124,6 +124,11 @@ Full contracts are in the actual files (Phase 4); this table is the index.
 
 Routing decisions are made once, at `analyze`, and recorded in `state.planned_nodes`:
 
+- **`plan` is mandatory, not conditional** (standing user directive, 2026-07-30): unlike every other
+  node below, `plan` (`solution-planning`) is `always: true` in both `ticket.yaml` and `bugfix.yaml` —
+  it is not part of the size/scope-driven routing this section otherwise describes. The one skip is
+  when the unit being opened is itself a sub-task already planned by a prior `plan` run (`/start-task`
+  Step 3).
 - **Docs-only change** (no `.java`/`.ts`/`.py`/`.sql` touched): skip `implement`'s repo fan-out
   complexity, `test`, and `security`; keep a lightweight `review` pass only.
 - **Single-repo change**: `implement` runs once, no fan-out, `integrate` is skipped (no cross-repo
@@ -233,7 +238,7 @@ No new gate is invented; the graph makes the existing one an explicit, checkable
 ├── graph/
 │   ├── README.md                  how to read/use this layer; explicitly declarative, no engine
 │   ├── workflows/
-│   │   ├── ticket.yaml            primary lifecycle: intake→analyze→plan?→implement→integrate?→test→review→security?→ship
+│   │   ├── ticket.yaml            primary lifecycle: intake→analyze→plan→implement→integrate?→test→review→security?→ship (plan mandatory since 2026-07-30)
 │   │   ├── bugfix.yaml            bug-investigation-first variant with mandatory regression test
 │   │   └── release.yaml           completion-audit fan-out/fan-in, read-only, no ship node
 │   ├── nodes/

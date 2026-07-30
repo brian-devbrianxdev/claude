@@ -8,11 +8,23 @@ description: Implement a ticket/task in the QUAPP workspace through a guarded 8-
 Drives a change through an **approval-gated, minimal-diff** flow. Code is only written after the user
 approves the plan (step 5).
 
+> **Model routing (standing user directive, 2026-07-30):** Steps 1–4 (the *thinking* phase — read,
+> identify, read rules, propose the plan) always run at **opus**, unconditionally — not just when a
+> plan already exists from `solution-planning`. This is the mandatory "think before code" gate for
+> *any* request that reaches this skill, ticket-based or ad hoc, including ones that bypassed
+> `/start-task` entirely. Steps 6–8 (the *execute* phase — diff, checks, summary) run at **sonnet**
+> once the user has approved the step-4 plan. See
+> [`../../docs/rules/model-routing.md`](../../docs/rules/model-routing.md) for the full table.
+
 ## When to Use
 - User says "implement PQF-123", "do this ticket", "build the feature/fix", "apply the change".
 - After `task-scoping` has scoped the work.
+- **Any ad hoc "fix/build/change X" request that never went through `/start-task`** — steps 1–4 below
+  are the substitute think-first pass for that case; don't skip straight to editing just because there's
+  no ticket.
 
 ## Workflow Steps (mandatory, in order)
+**Steps 1–4 run at opus — the think-first gate. Do not shortcut this by starting at step 6.**
 1. **Read the current code first.** Open the actual files involved and understand existing patterns
    before forming any plan. Use GitNexus `context` on the symbols you'll touch and `impact` to list
    every caller the diff must keep working ([`../../docs/rules/gitnexus.md`](../../docs/rules/gitnexus.md));
@@ -21,8 +33,11 @@ approves the plan (step 5).
    JDK. List every consumer if the change crosses tiers (frontend ↔ backend ↔ ai-mcp).
 3. **Read relevant `.claude/rules/`.** The matching repo file(s) + `workspace.md` (+ `testing.md`).
 4. **Propose a plan.** List the exact files to change, the approach, the cross-tier/DB impact, and the
-   checks you'll run. Keep it minimal.
+   checks you'll run. Keep it minimal. If a `solution-planning` result already exists for this ticket,
+   this step just translates that plan into the tactical file list — don't re-litigate the design.
 5. **WAIT for approval.** Do not edit source until the user approves. Use the question/approval step.
+
+**Steps 6–8 run at sonnet, after approval.**
 6. **Implement a minimal diff.** Change only what the plan covers; match surrounding style; reuse
    existing helpers. No drive-by refactors, no TODOs/dead code.
 7. **Run relevant checks.** Use the per-repo test/lint commands from `.claude/rules/testing.md` with the

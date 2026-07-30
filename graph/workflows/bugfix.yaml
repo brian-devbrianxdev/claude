@@ -27,11 +27,11 @@ nodes:
 
   - id: plan
     node_contract: ../nodes/plan.md
+    always: true   # standing user directive, 2026-07-30: opus must think through the fix
+                    # direction on every bug before code is written; not conditional anymore.
+                    # Skipped only when the unit being opened is itself a sub-task already
+                    # planned by a prior run (see /start-task Step 3).
     dependencies: [analyze]
-    when:
-      any_of:
-        - fix_direction_has_multiple_viable_options   # bug-investigation found >1 candidate fix
-        - user_explicitly_requested_estimate
 
   - id: implement
     node_contract: ../nodes/implement.md

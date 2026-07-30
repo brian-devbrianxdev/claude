@@ -22,11 +22,11 @@ nodes:
 
   - id: plan
     node_contract: ../nodes/plan.md
+    always: true   # standing user directive, 2026-07-30: opus must think through every ticket
+                    # before code is written; not conditional on scope size or an explicit ask
+                    # anymore. Skipped only when the unit being opened is itself a sub-task
+                    # already planned by a prior run (see /start-task Step 3).
     dependencies: [analyze]
-    when:
-      any_of:
-        - user_explicitly_requested_estimate_or_plan
-        - scope_is_large_or_ambiguous   # analyze's own judgment call, per solution-planning's trigger
 
   - id: implement
     node_contract: ../nodes/implement.md
@@ -85,18 +85,24 @@ nodes:
     note: "Never auto-commits or auto-pushes. See rules/java.md Phase 4 and commands/ship-task.md step 3 — unchanged by this workflow document."
 
 routing_examples:
-  # See design.md §4 for the full table this mirrors.
+  # See design.md §4 for the full table this mirrors. `plan` is now always: true (2026-07-30
+  # directive), so every example below includes it except the sub-task-skip case, which is a
+  # /start-task Step 3 nuance rather than a repo/contract-scope routing decision.
   docs_only_change:
-    planned_nodes: [intake, analyze, implement, review, ship]
-    skips: [plan, integrate, test, security]
+    planned_nodes: [intake, analyze, plan, implement, review, ship]
+    skips: [integrate, test, security]
     why: "No .java/.ts/.py/.sql touched; still one lightweight review pass, never zero review."
   single_repo_change:
-    planned_nodes: [intake, analyze, implement, test, review, ship]
+    planned_nodes: [intake, analyze, plan, implement, test, review, ship]
     skips: [integrate]
     why: "One git working tree; no cross-repo contract to sync."
   multi_repo_feature:
-    planned_nodes: [intake, analyze, implement, integrate, test, review, "security (if triggered)", ship]
+    planned_nodes: [intake, analyze, plan, implement, integrate, test, review, "security (if triggered)", ship]
     why: "e.g. PQF-22349 (backend) + PQF-22350 (frontend) language-C support seen live in this workspace at audit time — a shared contract requires the integrate fan-in before test."
   security_sensitive_change:
-    planned_nodes: [intake, analyze, implement, test, review, security, ship]
+    planned_nodes: [intake, analyze, plan, implement, test, review, security, ship]
     why: "auth/input/query surface touched — security is mandatory, not conditional-skipped."
+  subtask_of_already_planned_parent:
+    planned_nodes: [intake, analyze, implement, test, review, ship]
+    skips: [plan]
+    why: "The unit being opened is a sub-task created by a prior solution-planning run on its parent — re-planning it would re-derive an estimate that should be inherited instead (/start-task Step 3's one exception)."

@@ -37,8 +37,9 @@ them over ad-hoc `Agent(model: …)` calls for those roles.
 | `/start-task` (whole command) | sonnet | Jira fetch + scoping + branching is routine; pinned via command frontmatter |
 | `/ship-task` (whole command) | sonnet | Escalate individual review lenses per the code-review row |
 | `task-scoping` | sonnet | Read-only mapping |
-| `solution-planning` | **opus** | Design alternatives + estimation = ambiguity + trade-offs |
-| `change-implementation` | sonnet | Escalate to opus only if the plan spans ≥2 repos or changes auth/contracts |
+| `solution-planning` | **opus** | Design alternatives + estimation = ambiguity + trade-offs. **Mandatory, not conditional** (standing user directive, 2026-07-30): `/start-task` Step 3 always invokes it right after `task-scoping`, for every ticket — the only skip is when the unit being opened is itself a sub-task already planned by a prior run. |
+| `change-implementation` — steps 1–4 (read/identify/rules/propose plan) | **opus** | **Mandatory think-first gate** (standing user directive, 2026-07-30): always opus, unconditional — applies to ticket-based work *and* ad hoc requests that never went through `/start-task`. Not an escalation trigger anymore; this is the default. |
+| `change-implementation` — steps 6–8 (diff/checks/summary) | sonnet | Runs after the user approves the step-4 plan. Escalate to opus mid-execution only if the approved plan turns out to span ≥2 repos or touch auth/contracts in a way not caught during the think-first pass. |
 | `bug-investigation` | **opus** | Root-cause analysis |
 | `code-review` — correctness / standards / project-rules / api-contract lenses | sonnet | Routine diff review |
 | `code-review` — concurrency / architecture lens, or diff spanning ≥2 repos or >10 meaningfully changed files (excluding generated files, lockfiles, snapshots, formatting-only) | **opus** | Run that lens in an opus subagent (see the skill's escalation section) |
@@ -72,3 +73,7 @@ mechanical: bulk file reads, formatting, re-running checklists, summarizing some
 4. Never spawn a subagent *just* to change model for a small inline task — the handoff costs more than
    it saves. Routing applies to phases, not sentences.
 5. If unsure between two tiers, pick the cheaper one and rely on the escalation triggers.
+6. **Think-before-code is never routed below opus** (standing user directive, 2026-07-30):
+   `solution-planning` and `change-implementation`'s own steps 1–4 always run at opus, for every
+   task/ticket/ad hoc request — this is not conditional on ambiguity or scope size like the other
+   escalation triggers above.

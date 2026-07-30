@@ -1,5 +1,5 @@
 ---
-description: Open a ticket — fetch/create the Jira issue, scope it, confirm the branch base, move it In Progress, and create a correctly-named branch. Owns the opening half of the task lifecycle (absorbs the former jira-feature / jira-bugfix start).
+description: Open a ticket — fetch/create the Jira issue, scope it, run mandatory opus solution-planning, confirm the branch base, move it In Progress, and create a correctly-named branch. Owns the opening half of the task lifecycle (absorbs the former jira-feature / jira-bugfix start).
 argument-hint: PQF-<key> [bug|feature] [pasted ticket text]
 model: sonnet
 ---
@@ -7,7 +7,8 @@ model: sonnet
 # /start-task
 
 Opening ritual for a ticket. **Orchestration only — do not write feature code here.**
-Runs on **sonnet** (routine lifecycle work — see [`../docs/rules/model-routing.md`](../docs/rules/model-routing.md)).
+Runs on **sonnet** (routine lifecycle work — see [`../docs/rules/model-routing.md`](../docs/rules/model-routing.md)),
+except Step 3 which always escalates to **opus** (`solution-planning` — mandatory, not conditional).
 Reads project identity from [`../profiles/quapp/profile.md`](../profiles/quapp/profile.md)
 (tracker key, host, git user, branch model).
 
@@ -29,34 +30,45 @@ Reads project identity from [`../profiles/quapp/profile.md`](../profiles/quapp/p
      the thing Step 5 actually moves to In Progress).
 2. **Scope it.** Invoke the **`task-scoping`** skill to determine target repo(s), JDK, affected
    files/layers, and cross-repo contract/DB impact. Let the skill do it — don't re-derive here.
-3. **Confirm the branch base — STOP and ask.** Per `../rules/git-workflow.md`, the base is `staging`
+3. **Think it through — mandatory, opus.** Invoke **`solution-planning`** next, before any branch
+   exists. This is a **standing requirement (user directive, 2026-07-30): every ticket must be
+   reasoned through by Opus — solution design + identified change — before a branch is created or
+   code is written.** Not conditional, not asked — always run it here, with one exception:
+   **skip only if the unit identified in Step 1 is itself a sub-task** (its parent was already
+   planned by a prior `solution-planning` run — re-planning a sub-task would re-derive an estimate
+   that should instead be inherited from the parent). If `solution-planning` creates sub-tasks as
+   part of its output, re-resolve which sub-task Step 1's matching logic should now open before
+   continuing.
+4. **Confirm the branch base — STOP and ask.** Per `../rules/git-workflow.md`, the base is `staging`
    or the latest `production` depending on the fix, **never `develop` by default**. Propose the base,
    then **WAIT for explicit confirmation. Do not create the branch until confirmed.**
-4. **Propose the branch name** `feature|bugfix/khactuong.ngohoang/PQF-<key>-<short-desc>` (prefix from
+5. **Propose the branch name** `feature|bugfix/khactuong.ngohoang/PQF-<key>-<short-desc>` (prefix from
    the `bug|feature` arg or the issue type).
-5. **Move the unit(s) In Progress** (if MCP connected): `getTransitionsForJiraIssue` →
+6. **Move the unit(s) In Progress** (if MCP connected): `getTransitionsForJiraIssue` →
    `transitionJiraIssue` on the parent ticket, **and on `subtaskKey` too if one was identified in
    Step 1** — don't leave the sub-task sitting in To Do while its parent shows In Progress. Skip
    silently if Jira isn't available.
-6. **Create the branch** from the confirmed base **inside the target repo** (`cd` into the specific
+7. **Create the branch** from the confirmed base **inside the target repo** (`cd` into the specific
    repo first — not a monorepo). Multiple repos → create the matching branch in each, or ask which to
    start with.
-7. **Initialize graph run state (best-effort, non-fatal).** Per [`../graph/README.md`](../graph/README.md),
+8. **Initialize graph run state (best-effort, non-fatal).** Per [`../graph/README.md`](../graph/README.md),
    decide `planned_nodes` from [`../graph/workflows/ticket.yaml`](../graph/workflows/ticket.yaml) (or
-   `bugfix.yaml` for a Bug) using `task-scoping`'s output, then write
+   `bugfix.yaml` for a Bug) using `task-scoping`'s output — `plan` is now `always: true` in both
+   workflow files, so it belongs in `planned_nodes`/`completed_nodes` on every run except the
+   sub-task-skip case in Step 3 — then write
    `.claude/state/<parentKey>.json` per [`../graph/schemas/task-state.schema.json`](../graph/schemas/task-state.schema.json)
    (`mkdir -p .claude/state` first — same lazy-create pattern `/handoff` uses). Seed `task_id`,
    `objective`, `repos[]`, `workflow`, `planned_nodes`, `phase: intake`,
    `human_approval.branch_base_confirmed: true`. If this write fails for any reason (no `jq`,
    permissions, etc.), note it once and continue — this step never blocks the rest of the command.
-8. **Hand off.** Tell the user to proceed with **`change-implementation`** (which applies the
+9. **Hand off.** Tell the user to proceed with **`change-implementation`** (which applies the
    `../rules/java.md` gate). Do not start editing.
 
 ## Output
-A scope summary (repo / JDK / files / contracts), the confirmed base, the In-Progress ticket (and its
-sub-task too, if one was identified in Step 1), a created, correctly-named branch in the right
-repo, and (best-effort) an initialized `.claude/state/<key>.json` graph run record — ready to
-implement.
+A scope summary (repo / JDK / files / contracts), the solution-planning outcome (or the sub-task-skip
+reason), the confirmed base, the In-Progress ticket (and its sub-task too, if one was identified in
+Step 1), a created, correctly-named branch in the right repo, and (best-effort) an initialized
+`.claude/state/<key>.json` graph run record — ready to implement.
 
 ## Token hygiene
 End the summary by recommending the user start the implementation in a **fresh session** (`/clear`)

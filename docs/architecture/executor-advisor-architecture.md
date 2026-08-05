@@ -10,10 +10,9 @@ other project.
 
 ## Architecture
 
-- **Executor — Claude Sonnet 5.** The default model for this repo (`.claude/settings.json` →
-  `"model": "sonnet"`). Handles everything in the existing `sonnet` tier: exploration, reads,
-  routine implementation, mechanical refactors, tests, docs, running build/lint/test, ordinary
-  debugging. This is unchanged from today.
+- **Executor — Claude Opus 4.8.** The default model for this repo (`.claude/settings.json` →
+  `"model": "opus"`). Handles all inline work: planning, implementation, review, debugging.
+  Haiku/Sonnet subagents are used for mechanical tasks (drafter, evidence gathering).
 - **Deep reviewer — Claude Opus (`opus` tier, unchanged).** Spawned by the `code-review` /
   `security-review` skills when a trigger fires (the skills instruct the executor — not automatically
   enforced by a hook or workflow engine) for the concurrency / architecture / security lenses and
@@ -84,7 +83,7 @@ verifies every claim against the repository before acting on it.
 - To remove the advisor entirely: delete `.claude/agents/engineering-advisor.md`. No other file
   depends on its presence — `docs/rules/model-routing.md` and `README.md` reference it by name but
   degrade gracefully (the row/bullet becomes stale text to prune, not a broken reference).
-- To stop pinning Sonnet as the repo default: remove the `"model": "sonnet"` line from
+- To stop pinning Opus as the repo default: remove the `"model": "opus"` line from
   `.claude/settings.json`; the session will fall back to whatever `/model` or the global default
   resolves to.
 - To fully revert this architecture: revert the diffs to `settings.json`,

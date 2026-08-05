@@ -29,7 +29,6 @@
       "items": {
         "type": "object",
         "required": ["severity", "summary"],
-        "additionalProperties": false,
         "properties": {
           "severity": { "type": "string", "enum": ["blocker", "major", "minor", "nit"] },
           "file": { "type": "string" },

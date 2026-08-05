@@ -54,6 +54,7 @@ reference files loaded only when their section is needed.
 | [merge-conflict-resolution](merge-conflict-resolution/) | Resolve merge/rebase conflicts (intent-first; squash-merge + stale-index traps) |
 
 ### Commands (lifecycle orchestrators) — [`../commands/`](../commands/)
+- **`/briefing`** — session-start snapshot: 3 parallel agents gather open MRs + Jira in-progress + workspace git state → synthesize one actionable report.
 - **`/start-task`** — fetch/create ticket → `task-scoping` → confirm base (STOP) → In Progress → branch.
 - **`/ship-task`** — `code-review` → secret-scan gate → test per repo (STOP if red) → `commit` → push + MR → transition.
 - **`/review-mr`** — review an MR already open on GitLab (`glab mr view/diff` → code-review lenses → optionally post a note; never approves).

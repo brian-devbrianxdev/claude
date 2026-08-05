@@ -5,7 +5,6 @@
   "description": "Per-ticket durable run ledger for the graph workflow layer. Stored at .claude/state/<TASK_ID>.json, git-ignored, machine-local, best-effort. Not a replacement for the Jira ticket (source of truth) or /handoff (cross-session narrative) — see graph/README.md.",
   "type": "object",
   "required": ["task_id", "phase", "final_status", "created_at", "updated_at"],
-  "additionalProperties": false,
   "properties": {
     "task_id": {
       "type": "string",
@@ -22,16 +21,21 @@
     },
     "repos": {
       "type": "array",
+      "description": "Each entry is either a {name, path} object (preferred) or a plain string repo name (legacy).",
       "items": {
-        "type": "object",
-        "required": ["name", "path"],
-        "additionalProperties": false,
-        "properties": {
-          "name": { "type": "string" },
-          "path": { "type": "string" },
-          "branch": { "type": "string" },
-          "jdk": { "type": ["string", "null"] }
-        }
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["name", "path"],
+            "properties": {
+              "name": { "type": "string" },
+              "path": { "type": "string" },
+              "branch": { "type": "string" },
+              "jdk": { "type": ["string", "null"] }
+            }
+          },
+          { "type": "string" }
+        ]
       }
     },
     "workflow": {
@@ -55,15 +59,20 @@
     },
     "completed_nodes": {
       "type": "array",
+      "description": "Each entry is either a {node, attempt} object (preferred) or a plain node-id string (legacy).",
       "items": {
-        "type": "object",
-        "required": ["node", "attempt"],
-        "additionalProperties": false,
-        "properties": {
-          "node": { "type": "string" },
-          "attempt": { "type": "integer", "minimum": 1 },
-          "result_ref": { "type": "string", "description": "Pointer into evidence[] or findings[] for this node's node-result record." }
-        }
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["node", "attempt"],
+            "properties": {
+              "node": { "type": "string" },
+              "attempt": { "type": "integer", "minimum": 1 },
+              "result_ref": { "type": "string" }
+            }
+          },
+          { "type": "string" }
+        ]
       }
     },
     "blocked_nodes": {
@@ -71,7 +80,6 @@
       "items": {
         "type": "object",
         "required": ["node", "reason", "since"],
-        "additionalProperties": false,
         "properties": {
           "node": { "type": "string" },
           "reason": { "type": "string" },
@@ -84,7 +92,6 @@
       "items": {
         "type": "object",
         "required": ["node", "decision", "timestamp"],
-        "additionalProperties": false,
         "properties": {
           "node": { "type": "string" },
           "decision": { "type": "string" },
@@ -95,30 +102,36 @@
     },
     "evidence": {
       "type": "array",
+      "description": "Each entry is either a {node, type, summary} object (preferred) or a plain string (legacy).",
       "items": {
-        "type": "object",
-        "required": ["node", "type", "summary"],
-        "additionalProperties": false,
-        "properties": {
-          "node": { "type": "string" },
-          "type": { "type": "string", "description": "e.g. test-report, review-verdict, secret-scan, mr-url, commit-sha" },
-          "ref": { "type": "string", "description": "file:line, path, or URL" },
-          "summary": { "type": "string" }
-        }
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["node", "type", "summary"],
+            "properties": {
+              "node": { "type": "string" },
+              "type": { "type": "string", "description": "e.g. test-report, review-verdict, secret-scan, mr-url, commit-sha" },
+              "ref": { "type": "string", "description": "file:line, path, or URL" },
+              "summary": { "type": "string" }
+            }
+          },
+          { "type": "string" }
+        ]
       }
     },
     "findings": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["node", "severity", "summary"],
-        "additionalProperties": false,
+        "required": ["severity", "summary"],
         "properties": {
           "node": { "type": "string" },
           "severity": { "type": "string", "enum": ["blocker", "major", "minor", "nit"] },
           "file": { "type": "string" },
           "line": { "type": "integer" },
-          "summary": { "type": "string" }
+          "issue": { "type": "string" },
+          "summary": { "type": "string" },
+          "outcome": { "type": "string" }
         }
       }
     },
@@ -126,13 +139,14 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["repo", "command", "status"],
-        "additionalProperties": false,
+        "required": ["repo", "command"],
         "properties": {
           "repo": { "type": "string" },
           "command": { "type": "string" },
           "status": { "type": "string", "enum": ["pass", "fail", "not_run"] },
-          "summary": { "type": "string" }
+          "result": { "type": "string", "description": "Legacy alias for status; prefer status + summary." },
+          "summary": { "type": "string" },
+          "note": { "type": "string" }
         }
       }
     },
@@ -143,7 +157,6 @@
     },
     "human_approval": {
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "branch_base_confirmed": { "type": "boolean" },
         "plan_approved": { "type": "boolean" },

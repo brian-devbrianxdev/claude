@@ -13,13 +13,13 @@ phase boundary — don't nag mid-task.
 | **haiku** | `haiku` | Mechanical output: commit messages, changelogs, formatting, lint/checklist verification, simple classification, grading/verifying another agent's output |
 | **sonnet** | `sonnet` | Normal engineering: implementation, features, refactoring, tests, docs, CRUD/API work, routine diff review, evidence-gathering subagents |
 | **opus** | `opus` | Deep reasoning: hard debugging/root-cause, architecture decisions, large refactors, security review, performance analysis, concurrency review, ambiguous requirements, cross-repo/cross-module changes |
-| **orchestrator** — *in this repo: `sonnet`, pinned by `settings.json`* (elsewhere: inherit whatever session model is running — Sonnet, Opus, Fable, ...) | *(omit `model` — inherit)* | Orchestration only: planning and decomposing large work, coordinating multiple agents, synthesizing several workers' results. Does **not** own Go/No-Go verdicts on high-risk changes — that is the advisor's role. |
+| **orchestrator** — *in this repo: `opus`, pinned by `settings.json`* (elsewhere: inherit whatever session model is running — Sonnet, Opus, Fable, ...) | *(omit `model` — inherit)* | Orchestration only: planning and decomposing large work, coordinating multiple agents, synthesizing several workers' results. Does **not** own Go/No-Go verdicts on high-risk changes — that is the advisor's role. |
 | **advisor** (scarce) | `opus` | Manual-only: provides high-risk **recommendation** (not final authority). The orchestrator verifies advisor findings and owns the user-facing Go/No-Go verdict. Eligible only after Opus when: ≥2 viable approaches remain open, two attempts failed, rollback cost is high, or final sign-off on genuinely high-risk work. Never auto-spawned — see [`../architecture/executor-advisor-architecture.md`](../architecture/executor-advisor-architecture.md). Frontmatter defaults to `opus` (guaranteed available); optionally set `fable` in `agents/engineering-advisor.md` if a higher-tier alias exists locally. |
 
 Rule of thumb: **workers get an explicit cheap tier; the orchestrator inherits the session model.**
 Omitting `model` on a subagent = inherit — only omit when the subagent genuinely needs
-orchestrator-level reasoning. In this repo the session default is pinned to `sonnet`
-(`.claude/settings.json`) — the executor tier above is that pinned default, not an ad-hoc choice.
+orchestrator-level reasoning. In this repo the session default is pinned to `opus`
+(`.claude/settings.json`) — Haiku/Sonnet subagents handle mechanical tasks (drafter, evidence gathering).
 
 Three **named agents** (`../agents/`) carry the recurring routed roles so their model is pinned in
 one place: **`deep-reviewer`** (opus — concurrency/architecture/security lenses, large cross-repo
@@ -34,6 +34,7 @@ them over ad-hoc `Agent(model: …)` calls for those roles.
 
 | Task | Tier | Notes |
 |------|------|-------|
+| `/briefing` (whole command) | sonnet | Parallel gather (MRs + Jira + git state) + synthesis; haiku subagents for the two gather branches, sonnet for MR gather; pinned via command frontmatter |
 | `/start-task` (whole command) | sonnet | Jira fetch + scoping + branching is routine; pinned via command frontmatter |
 | `/ship-task` (whole command) | sonnet | Escalate individual review lenses per the code-review row |
 | `task-scoping` | sonnet | Read-only mapping |

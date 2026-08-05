@@ -17,7 +17,7 @@ fi
 root="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 [ -d "$root" ] || exit 0
 
-REPOS="functions/quapp-functions-backend functions/quapp-functions-frontend ai/quapp-ai-mcp ai/quapp-jupyterlab-ai-assistant-ext migration/quapp-migration migration/quapp-ai-mcp-migration"
+REPOS="functions/quapp-functions-backend functions/quapp-functions-frontend ai/quapp-ai-mcp ai/quapp-jupyterlab-ai-assistant-ext ai/quapp-jupyterlab-s3-ext migration/quapp-migration migration/quapp-ai-mcp-migration sdk/qapp-common sdk/quapp-sdk-templates sdk/quapp-qiskit"
 
 lines=""
 warns=""
@@ -56,6 +56,12 @@ for rel in $REPOS; do
     if [ -n "$head_ts" ] && [ -n "$idx_ts" ] && [ "$idx_ts" -lt "$head_ts" ]; then
       append_warn "$name GitNexus index looks older than HEAD — reanalyze before trusting graph queries."
     fi
+  fi
+
+  # Warn when a PQF work branch has no graph state file — suggests /start-task was skipped
+  pqf_key="$(echo "$branch" | grep -oE 'PQF-[0-9]+' | head -1)"
+  if [ -n "$pqf_key" ] && [ ! -f "$root/.claude/state/${pqf_key}.json" ]; then
+    append_warn "$name branch $branch has no .claude/state/${pqf_key}.json — run /start-task to initialize graph state."
   fi
 done
 

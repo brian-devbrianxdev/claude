@@ -5,7 +5,8 @@ Conventions that apply across **all** Quapp repos. Repo-specific detail lives in
 
 ## Not a monorepo
 - This is a VS Code multi-root workspace (`Quapp.code-workspace`), **not** a git monorepo. Each
-  subfolder under `ai/`, `functions/`, `migration/` is its own independent git repository.
+  subfolder under `ai/`, `functions/`, `migration/`, `sdk/`, `tools/` is its own independent git
+  repository — **12 repos across 5 concern folders**.
 - There is **no** root-level build, no shared lockfile, and no cross-repo package linking on disk —
   repos integrate at **runtime over HTTP** (see `CLAUDE.md` → Cross-Repo Interaction).
 - **Don't** run a build at the workspace root, and **don't** `cd` across repos in one command. Run
@@ -16,13 +17,16 @@ Conventions that apply across **all** Quapp repos. Repo-specific detail lives in
 |------|-----|
 | `functions/quapp-functions-backend` | **Java 17** |
 | `functions/quapp-functions-frontend` | n/a (Node/yarn) |
+| `functions/quapp-ims` | n/a (Node/yarn) |
 | `ai/quapp-ai-mcp` | **Java 21** |
 | `ai/quapp-jupyterlab-ai-assistant-ext` | n/a (Python + Node) |
 | `ai/quapp-jupyterlab-s3-ext` | n/a (Python + Node) |
 | `migration/quapp-migration` | **Java 17** |
 | `migration/quapp-ai-mcp-migration` | **Java 21** |
 | `sdk/qapp-common` | n/a (Python) |
+| `sdk/quapp-qiskit` | n/a (Python) |
 | `sdk/quapp-sdk-templates` | n/a (Python + JS + Q#) |
+| `tools/quapp-python-compliance-guard` | n/a (Python) |
 
 `Quapp.code-workspace` configures JavaSE-17 + JavaSE-21 (21 is the IDE default; terminal `JAVA_HOME`
 points at openjdk@21). Match the repo's JDK when building from a terminal.
@@ -58,6 +62,13 @@ points at openjdk@21). Match the repo's JDK when building from a terminal.
 ## Cross-cutting pitfalls
 - **Two "QuaO" databases.** `quapp-migration` ↔ QuaO platform DB; `quapp-ai-mcp-migration` ↔ AI-MCP DB.
   Don't add a platform changeset to the ai-mcp migration repo or vice versa (see `../docs/rules/migration.md`).
+- **Two frontends consume the backend.** `quapp-functions-frontend` (user app) *and* `quapp-ims`
+  (admin/IMS). Both `package.json` files are named `quao-frontend` — identify by folder path. `quapp-ims`
+  is outside the GitNexus contract group, so route/DTO changes need a **manual** grep there
+  (see `../docs/rules/quapp-ims.md`).
+- **Code validation is not in the backend.** Quantum-function syntax + handler-contract checks live in
+  `tools/quapp-python-compliance-guard` (FastAPI). A validation bug or a new language belongs there,
+  even when the symptom shows up in the backend (see `../docs/rules/python-compliance-guard.md`).
 - **No generated cross-repo client.** A backend/MCP endpoint or DTO change won't propagate to the
   frontend/JupyterLab ext automatically — update the consumer by hand. *(Verified: no generated/shared
   API client is checked in. SpringDoc is present in the Java services, but no generated OpenAPI client

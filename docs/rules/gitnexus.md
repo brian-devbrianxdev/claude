@@ -6,15 +6,21 @@ routes, processes) that replaces blind grep-crawling for navigation, tracing, an
 
 ## What's indexed
 
-All **6 repos** are indexed individually — each has its own `.gitnexus/` directory and registry entry
+All **12 repos** are indexed individually — each has its own `.gitnexus/` directory and registry entry
 (this is not a monorepo; there is **no workspace-root index**). Repo names in tool calls = folder names:
-`quapp-functions-backend`, `quapp-functions-frontend`, `quapp-ai-mcp`,
-`quapp-jupyterlab-ai-assistant-ext`, `quapp-migration`, `quapp-ai-mcp-migration`.
+`quapp-functions-backend`, `quapp-functions-frontend`, `quapp-ims`, `quapp-ai-mcp`,
+`quapp-jupyterlab-ai-assistant-ext`, `quapp-jupyterlab-s3-ext`, `quapp-migration`,
+`quapp-ai-mcp-migration`, `qapp-common`, `quapp-qiskit`, `quapp-sdk-templates`,
+`quapp-python-compliance-guard`.
 
 - Embeddings are **off** (no semantic search); PDG/taint layers (`--pdg`) are **not built** — `explain`
   and `pdg_query` will report "no taint/PDG layer" unless someone runs `analyze --pdg`.
 - The migration repos' graphs are tiny (mostly SQL changelogs) — GitNexus adds little there; plain
-  file reads are fine.
+  file reads are fine. Same for `quapp-python-compliance-guard` (9 files) and `quapp-qiskit` (40).
+- **Reindexing the whole workspace**: run `analyze -f --skip-agents-md --skip-skills` per repo. The
+  two skip flags matter — without them `analyze` rewrites each repo's `CLAUDE.md`/`AGENTS.md` and
+  `.claude/skills/`, which dirties working trees that are mid-ticket (and in some repos those files
+  are tracked).
 
 ## Freshness (check before trusting results)
 
@@ -57,15 +63,16 @@ recognizes `axios`/`fetch`, so the UmiJS `request` wrapper yields zero auto-dete
 The consumer side is instead **generated** by
 [`scripts/sync-contract-links.py`](../../scripts/sync-contract-links.py), which matches
 `src/constants/endpoints/index.ts` against the extracted provider routes and writes manifest
-`links:` into `group.yaml` (~95/150 endpoints exact-match; the rest build URLs dynamically at call
+`links:` into `group.yaml` (97/153 endpoints exact-match as of 2026-08-10; the rest build URLs dynamically at call
 sites and stay manual).
 
 | Question | Works? | How |
 |----------|--------|-----|
 | "Who serves `GET /v1/users/{id}`?" (route → provider method `file:line`) | ✅ | `group contracts quapp` / `group_list`+`contracts.json`, or `route_map`/`api_impact` on the provider repo |
-| "Does the frontend consume this route at all?" | ✅ for the ~95 registry-linked endpoints | cross-link in `contracts.json` names the frontend endpoint constant path |
+| "Does the frontend consume this route at all?" | ✅ for the ~97 registry-linked endpoints (736 contracts, 196 cross-links / 98 exact) | cross-link in `contracts.json` names the frontend endpoint constant path |
 | "Which frontend components/hooks break?" (consumer-side symbol fan-out) | ❌ | manifest consumers are synthetic nodes — `group impact` reports the frontend as `truncated` instead of fanning out. Grep the endpoint constant in `src/constants/endpoints/index.ts` and trace its uses with the frontend repo's own `context`/`impact` |
-| ext↔ai-mcp, WS/STOMP/SSE contracts, the ~55 dynamic-URL endpoints | ❌ | manual check per `workspace.md`, unchanged |
+| **`quapp-ims` (the admin/IMS frontend) consuming a backend route** | ❌ | **not a group member** — its endpoints are never in `contracts.json`. Always grep `functions/quapp-ims` by hand before calling a route/DTO change safe (see [quapp-ims.md](quapp-ims.md)) |
+| ext↔ai-mcp, WS/STOMP/SSE contracts, the ~56 dynamic-URL endpoints | ❌ | manual check per `workspace.md`, unchanged |
 
 **Maintenance:** after `analyze` on any member repo, re-run
 `python3 .claude/scripts/sync-contract-links.py` then `gitnexus group sync quapp`

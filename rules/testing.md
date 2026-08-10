@@ -11,6 +11,9 @@ claim green if you didn't run them.
 | `quapp-functions-frontend` | `yarn test` (Jest; setup `tests/setupTests.jsx`, `jest.setup.ts`) | `yarn test:coverage`. **No Playwright/e2e** in this repo (no `ui-tests/`, no Playwright dep). |
 | `quapp-jupyterlab-ai-assistant-ext` | `jlpm test` (Jest) + `pytest -vv -r ap --cov quapp_jupyterlab_ai_assistant` | Playwright/Galata in `ui-tests/` |
 | `quapp-jupyterlab-s3-ext` | `jlpm test` (Jest) + `pytest -vv -r ap --cov quapp_jupyterlab_s3_bridge` | Playwright/Galata in `ui-tests/` |
+| `quapp-ims` | `yarn test` (Jest) | `yarn test:coverage`; `yarn lint` / `yarn tsc`. Frontend test exception applies. |
+| `quapp-python-compliance-guard` | `python -m pytest test_main.py` | — (no Docker needed) |
+| `quapp-qiskit` | `python -m pytest tests/` | `tests/` has **no committed test modules** — a green run proves nothing |
 | `quapp-migration` | `./gradlew test` (Testcontainers) | — |
 | `quapp-ai-mcp-migration` | `./gradlew test` | — |
 | `qapp-common` | `python -m pytest tests/` | — |
@@ -29,6 +32,7 @@ claim green if you didn't run them.
 ## Frontend test-writing exception (overrides the global "every change needs tests" default)
 **Applies to all FE/UI source in the workspace, not one repo** — currently that means:
   - **`quapp-functions-frontend`** — the entire repo (it's 100% frontend).
+  - **`quapp-ims`** — the entire repo (admin/IMS UI, same UmiJS stack and same team convention).
   - **`quapp-jupyterlab-ai-assistant-ext`'s TypeScript/React frontend only** — the `src/` panel code
     (`jlpm test` / Jest). Its **Python server extension** (`quapp_jupyterlab_ai_assistant/`, `pytest`) is
     backend code and is **not** covered — that half keeps mandatory tests. **Playwright/Galata

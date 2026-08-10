@@ -14,6 +14,12 @@ git commands inside the specific repo folder. The details below come from each r
   - `staging` → deploys to **stg**
   - `production` → deploys to **prd**
 - Work happens on short-lived branches merged via MR.
+- **Exceptions to the above — check before branching:**
+  - `quapp-ims` also deploys `ctc-staging` / `ctc-production` (separate CTC tenant line).
+  - `quapp-qiskit`'s default/publish branch is **`release/qiskit-v1`**; merging there publishes to PyPI.
+  - `qapp-common` publishes to PyPI from **`develop`**.
+  - both JupyterLab exts release by **version tag**, not by merging an env branch. In
+    `quapp-jupyterlab-s3-ext` the `staging`/`production` branches are ~a year stale — base off `develop`.
 
 ## Branch base (confirm per fix — never default to `develop`)
 - Base each branch off `staging` or the **latest** `production`, depending on the fix — **not** `develop`.
@@ -41,6 +47,9 @@ git commands inside the specific repo folder. The details below come from each r
 | `quapp-functions-frontend` | `build → sast → deploy` | branch-based; copies `$ENV_FILE` → `.env` at build |
 | `quapp-migration` | `build → deploy` | branch-based; deploy uses `$KUBECONFIG_FILE` |
 | `quapp-ai-mcp-migration` | `build → deploy` | branch-based: `develop`/`staging`/`production` |
+| `quapp-ims` | `build → sast → deploy` | branch-based, **plus `ctc-staging` / `ctc-production`** (separate CTC tenant deploy) |
+| `quapp-python-compliance-guard` | `build → deploy` | branch-based: `develop`/`staging`/`production` |
+| `quapp-qiskit` | build → **PyPI publish** | **publish branch is `release/qiskit-v1`** (= `origin/HEAD`), *not* `develop` |
 | `quapp-jupyterlab-ai-assistant-ext` | `build → publish → trigger` | **tag-based**: runs only on version tags matching `^v\d+\.\d+\.\d+(\.dev\d+\|\.pre\d+\|-batch\d+)?$`; builds a wheel + publishes |
 
 - Build jobs build a Docker image (`docker:20.10.16-dind`), tag it `:$CI_COMMIT_SHORT_SHA-$CI_PIPELINE_ID`
